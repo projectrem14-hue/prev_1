@@ -17,6 +17,7 @@ import { useFirestore } from '@/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { 
   CheckCircle2, 
+  XCircle,
   Play, 
   Pause, 
   RotateCcw,
@@ -297,9 +298,9 @@ export default function FocusTimer() {
                           <div className="flex items-center gap-6">
                             <div className={cn(
                               "w-12 h-12 rounded-2xl flex items-center justify-center",
-                              log ? "bg-emerald-500/20 text-emerald-500" : "bg-primary/10 text-primary"
+                              log ? (log.completed ? "bg-emerald-500/20 text-emerald-500" : "bg-destructive/20 text-destructive") : "bg-primary/10 text-primary"
                             )}>
-                              {log ? <CheckCircle2 className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
+                              {log ? (log.completed ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />) : <Zap className="w-6 h-6" />}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
@@ -314,7 +315,14 @@ export default function FocusTimer() {
                               <Play className="w-4 h-4 fill-current" /> Start Focus
                             </Button>
                           )}
-                          {log && <Badge className="bg-emerald-500/10 text-emerald-500 border-none px-4">Synced</Badge>}
+                          {log && (
+                            <Badge className={cn(
+                              "border-none px-4 font-bold uppercase text-[10px] tracking-widest",
+                              log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"
+                            )}>
+                              {log.completed ? 'Completed' : 'Missed'}
+                            </Badge>
+                          )}
                         </div>
                       </Card>
                     );
