@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/lib/AuthContext';
@@ -16,7 +15,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     }
   }, [user, loading, router]);
 
-  if (loading) {
+  // If we have a user in state (from localStorage), don't block render with a loader
+  if (loading && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -27,7 +27,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) return null;
+  if (!user && !loading) return null;
 
   return <>{children}</>;
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -29,8 +28,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!db || !user) return;
-    // Don't set loading to true here to avoid flickering on manual refresh
+    if (!db || !user) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       const [allInts, allLogs] = await Promise.all([
         getAllIntentions(db, user.uid),
@@ -46,12 +48,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [db, user]);
 
   useEffect(() => {
-    if (user && db) {
-      refresh();
-    } else {
-      setLoading(false);
-    }
-  }, [user, db, refresh]);
+    refresh();
+  }, [refresh]);
 
   return (
     <DataContext.Provider value={{ intentions, logs, loading, refresh }}>

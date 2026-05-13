@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -23,9 +22,22 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize state synchronously from localStorage to avoid flashes on page switch
-  const [user, setUser] = useState<MockUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize state directly from localStorage if available to avoid flashes
+  const [user, setUser] = useState<MockUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('gaplogic_session');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+  
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      // If we have a session, we aren't "loading" in a blocking sense
+      return !localStorage.getItem('gaplogic_session');
+    }
+    return true;
+  });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('gaplogic_session');
