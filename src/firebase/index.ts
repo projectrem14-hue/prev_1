@@ -24,15 +24,28 @@ export function initializeFirebase(): {
 
   // Ensure we don't attempt to initialize with an empty config which causes SDK errors
   if (!firebaseConfig.apiKey) {
-    console.error("Firebase Configuration Error: API Key is missing. Check your .env file.");
-    // We still return to avoid immediate crashes, but the Auth/Firestore calls will fail gracefully
+    console.warn("Firebase Configuration Warning: API Key is missing. Connectivity will be limited.");
+    return { 
+      firebaseApp: {} as FirebaseApp, 
+      firestore: {} as Firestore, 
+      auth: {} as Auth 
+    };
   }
 
-  const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  const firestore = getFirestore(firebaseApp);
-  const auth = getAuth(firebaseApp);
+  try {
+    const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    const firestore = getFirestore(firebaseApp);
+    const auth = getAuth(firebaseApp);
 
-  return { firebaseApp, firestore, auth };
+    return { firebaseApp, firestore, auth };
+  } catch (error) {
+    console.error("Firebase Initialization Error:", error);
+    return { 
+      firebaseApp: {} as FirebaseApp, 
+      firestore: {} as Firestore, 
+      auth: {} as Auth 
+    };
+  }
 }
 
 export * from './provider';

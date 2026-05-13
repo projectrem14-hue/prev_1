@@ -38,6 +38,16 @@ export default function LoginPage() {
       return;
     }
 
+    if (!auth || !auth.app) {
+      toast({ 
+        variant: "destructive", 
+        title: "Configuration Error", 
+        description: "Firebase is not correctly configured. Please check your .env files." 
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isSignUp) {
         await signUp(auth, email, password);
@@ -48,10 +58,11 @@ export default function LoginPage() {
       }
       router.push('/');
     } catch (error: any) {
-      let message = "An error occurred during authentication.";
+      let message = error.message || "An error occurred during authentication.";
       if (error.code === 'auth/wrong-password') message = "Incorrect password. Try again.";
       if (error.code === 'auth/user-not-found') message = "No account found. Please sign up.";
       if (error.code === 'auth/email-already-in-use') message = "Email is already registered.";
+      if (error.code === 'auth/invalid-api-key') message = "Invalid Firebase API Key. Check your configuration.";
       
       toast({ variant: "destructive", title: "Auth Failed", description: message });
     } finally {
