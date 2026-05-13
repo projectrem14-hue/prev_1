@@ -15,7 +15,11 @@ import {
   TrendingDown, 
   AlertCircle, 
   PlusCircle,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  ArrowRight,
+  BrainCircuit,
+  Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -24,7 +28,7 @@ export default function Dashboard() {
   const { intentions, logs, loading } = useData();
 
   useEffect(() => {
-    document.title = "GapLogic — Dashboard";
+    document.title = "GapLogic | Dashboard";
   }, []);
 
   const metrics = useMemo(() => {
@@ -70,15 +74,12 @@ export default function Dashboard() {
       <ProtectedRoute>
         <div className="min-h-screen bg-background text-foreground flex">
           <Navigation />
-          <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
-            <div className="space-y-4 mb-10">
-              <Skeleton className="h-12 w-[300px]" />
-              <Skeleton className="h-6 w-[400px]" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12 space-y-8">
+            <Skeleton className="h-12 w-64 rounded-xl" />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
             </div>
-            <Skeleton className="h-[400px] w-full rounded-3xl" />
+            <Skeleton className="h-96 w-full rounded-3xl" />
           </main>
         </div>
       </ProtectedRoute>
@@ -92,127 +93,190 @@ export default function Dashboard() {
         
         <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
           {intentions.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <Target className="w-12 h-12 text-primary" />
+            <div className="h-full flex flex-col items-center justify-center max-w-4xl mx-auto">
+              <div className="relative mb-12 animate-float">
+                <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
+                <div className="relative w-32 h-32 rounded-[2rem] bg-gradient-to-br from-primary via-secondary to-accent p-[1px]">
+                  <div className="w-full h-full rounded-[1.95rem] bg-background flex items-center justify-center">
+                    <BrainCircuit className="w-16 h-16 text-primary glow-text" />
+                  </div>
+                </div>
               </div>
-              <h2 className="text-3xl font-headline font-bold mb-3">No data yet</h2>
-              <p className="text-muted-foreground mb-8 max-w-md">
-                Start by adding intentions in the Modeler to see your behavioral diagnostics come to life.
+              
+              <h1 className="text-5xl md:text-6xl font-headline font-bold mb-6 text-center leading-tight">
+                Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Behavioral Core</span> is Empty
+              </h1>
+              <p className="text-muted-foreground text-xl mb-12 text-center max-w-2xl leading-relaxed">
+                GapLogic analyzes the dissonance between what you plan and what you actually do. To begin your audit, initialize your first behavioral stack.
               </p>
-              <Link href="/modeler">
-                <Button size="lg" className="rounded-2xl gap-2 font-bold px-10 h-14 bg-primary text-primary-foreground shadow-xl shadow-primary/20">
-                  <PlusCircle className="w-5 h-5" />
-                  Go to Modeler
-                </Button>
-              </Link>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <Card className="glass-panel group hover:bg-white/5 transition-all cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-primary">
+                      <Target className="w-5 h-5" />
+                      Phase 1: Modeler
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">Define your ideal cognitive intentions for the day with precision.</p>
+                    <Link href="/modeler">
+                      <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        Initialize Stack <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-panel group hover:bg-white/5 transition-all cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-accent">
+                      <RefreshCw className="w-5 h-5" />
+                      Phase 2: Reality Sync
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">Log the actual outcomes to surface behavioral friction and leaks.</p>
+                    <Link href="/sync">
+                      <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-accent group-hover:text-accent-foreground transition-all" disabled>
+                        Unlock after Modeler <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           ) : (
             <>
-              <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+              <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
-                  <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Cognitive Dashboard</h1>
-                  <p className="text-muted-foreground text-lg">Visualizing the gap between your intentions and reality.</p>
+                  <div className="flex items-center gap-2 text-primary mb-2">
+                    <Activity className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Neural Status: Active</span>
+                  </div>
+                  <h1 className="font-headline text-5xl font-bold tracking-tighter mb-2">Cognitive Command</h1>
+                  <p className="text-muted-foreground text-lg">Real-time analysis of your behavioral fidelity.</p>
                 </div>
-                <Badge variant="outline" className="px-4 py-1.5 rounded-full border-border/40 bg-card/30 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  Live Analytics
-                </Badge>
+                <div className="flex items-center gap-4">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 px-4 py-2 rounded-xl flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    Optimizing Flow
+                  </Badge>
+                </div>
               </header>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <Card className="glass-card border-none">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <Card className="glass-panel hover:scale-[1.02] transition-transform duration-300">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <Target className="w-4 h-4 text-primary" />
-                      Intention Rate
+                      Intention Fidelity
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics?.intentionRate}%</div>
-                    <Progress value={metrics?.intentionRate} className="h-1.5 mt-4" />
+                    <div className="text-4xl font-bold font-headline mb-4">{metrics?.intentionRate}%</div>
+                    <Progress value={metrics?.intentionRate} className="h-2 bg-white/5" />
                   </CardContent>
                 </Card>
                 
-                <Card className="glass-card border-none">
+                <Card className="glass-panel hover:scale-[1.02] transition-transform duration-300">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <Zap className="w-4 h-4 text-accent" />
-                      Current Streak
+                      Cognitive Streak
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics?.streak} Days</div>
-                    <div className="flex gap-1 mt-4">
+                    <div className="text-4xl font-bold font-headline mb-4">{metrics?.streak} <span className="text-sm font-normal text-muted-foreground">Days</span></div>
+                    <div className="flex gap-1.5">
                       {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                        <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= ((metrics?.streak || 0) % 8) ? "bg-accent" : "bg-muted")} />
+                        <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= ((metrics?.streak || 0) % 8) ? "bg-accent shadow-[0_0_10px_rgba(6,182,212,0.5)]" : "bg-white/5")} />
                       ))}
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-none">
+                <Card className="glass-panel hover:scale-[1.02] transition-transform duration-300">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <TrendingDown className="w-4 h-4 text-secondary" />
-                      Top Friction
+                      Friction Node
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline capitalize truncate">{metrics?.topFrictionCategory}</div>
-                    <Badge variant="secondary" className="mt-4 bg-secondary/10 text-secondary border-none">Primary Leak Point</Badge>
+                    <div className="text-3xl font-bold font-headline capitalize truncate mb-2">{metrics?.topFrictionCategory}</div>
+                    <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20 rounded-lg">High Leak Risk</Badge>
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-none">
+                <Card className="glass-panel hover:scale-[1.02] transition-transform duration-300">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-destructive" />
-                      Deviations
+                      Discrepancies
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics?.criticalDeviations}</div>
-                    <p className="text-xs text-muted-foreground mt-4">Intentions never logged</p>
+                    <div className="text-4xl font-bold font-headline mb-1 text-destructive">{metrics?.criticalDeviations}</div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Untracked intentions</p>
                   </CardContent>
                 </Card>
               </div>
 
-              <section>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-headline text-2xl font-bold">Recent Activity</h2>
+              <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-8 bg-primary rounded-full" />
+                    <h2 className="font-headline text-3xl font-bold tracking-tight">Recent Activity</h2>
+                  </div>
                   <Link href="/sync">
-                    <Button variant="ghost" className="text-primary hover:bg-primary/10 gap-2 font-bold">
+                    <Button variant="ghost" className="hover:bg-primary/10 text-primary gap-2 font-bold rounded-xl">
                       <RefreshCw className="w-4 h-4" />
                       Sync Reality
                     </Button>
                   </Link>
                 </div>
+                
                 <div className="grid grid-cols-1 gap-4">
                   {[...intentions].slice(0, 5).map((item) => {
                     const log = logs.find(l => l.intentionId === item.id);
                     return (
-                      <div key={item.id} className="flex items-center justify-between p-5 rounded-2xl bg-card/40 border border-border/40 hover:bg-card/60 transition-all group glass-card border-none">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <Target className={cn("w-6 h-6", log?.completed ? "text-primary" : "text-muted-foreground")} />
+                      <div key={item.id} className="group glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-all">
+                        <div className="flex items-center gap-6">
+                          <div className={cn(
+                            "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+                            log ? (log.completed ? "bg-primary/20 text-primary shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "bg-destructive/20 text-destructive") : "bg-muted/30 text-muted-foreground"
+                          )}>
+                            <Target className="w-7 h-7" />
                           </div>
                           <div>
-                            <h4 className="font-headline font-semibold text-lg">{item.title}</h4>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <span className={cn("w-1.5 h-1.5 rounded-full", log ? (log.completed ? "bg-primary" : "bg-destructive") : "bg-muted-foreground/40")} />
-                              {item.category} • {item.scheduledTime}
-                            </p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className="bg-white/5 hover:bg-white/10 text-[10px] text-muted-foreground border-none px-2 py-0">
+                                {item.category.toUpperCase()}
+                              </Badge>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{item.date}</span>
+                            </div>
+                            <h4 className="font-headline font-bold text-xl group-hover:text-primary transition-colors">{item.title}</h4>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1.5 font-medium"><Activity className="w-3.5 h-3.5" /> Effort: {item.effortEstimate}</span>
+                              <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                              <span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> {item.scheduledTime}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right flex flex-col items-end gap-1">
-                          <Badge variant="outline" className={cn(
-                            "border-none px-3 py-1",
-                            log ? (log.completed ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive") : "bg-muted/30 text-muted-foreground"
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={cn(
+                            "px-4 py-1.5 rounded-full font-bold border-none",
+                            log ? (log.completed ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground") : "bg-muted text-muted-foreground"
                           )}>
-                            {log ? (log.completed ? "Completed" : "Missed") : "No Log"}
+                            {log ? (log.completed ? "COMPLETED" : "MISSED") : "PENDING"}
                           </Badge>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">{item.date}</span>
+                          {log?.frictionNote && (
+                            <div className="flex items-center gap-1.5 text-xs text-destructive font-medium max-w-[200px] truncate">
+                              <AlertCircle className="w-3 h-3" />
+                              Friction logged
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

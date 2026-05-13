@@ -4,31 +4,31 @@
 
 @layer base {
   :root {
-    --background: 255 12% 13%;
+    --background: 240 10% 4%;
     --foreground: 0 0% 98%;
-    --card: 255 12% 15%;
+    --card: 240 10% 6%;
     --card-foreground: 0 0% 98%;
-    --popover: 255 12% 13%;
+    --popover: 240 10% 4%;
     --popover-foreground: 0 0% 98%;
-    --primary: 262 82% 77%;
-    --primary-foreground: 255 12% 10%;
-    --secondary: 225 100% 69%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 255 10% 20%;
-    --muted-foreground: 255 5% 70%;
-    --accent: 262 82% 77%;
-    --accent-foreground: 255 12% 10%;
+    --primary: 263 90% 70%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 190 90% 50%;
+    --accent-foreground: 240 10% 4%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 255 10% 25%;
-    --input: 255 10% 25%;
-    --ring: 262 82% 77%;
-    --chart-1: 262 82% 77%;
-    --chart-2: 225 100% 69%;
-    --chart-3: 200 80% 60%;
-    --chart-4: 280 70% 65%;
-    --chart-5: 340 75% 55%;
-    --radius: 1.25rem;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 10% 15%;
+    --input: 240 10% 15%;
+    --ring: 263 90% 70%;
+    --radius: 1rem;
+    --chart-1: 263 90% 70%;
+    --chart-2: 217 91% 60%;
+    --chart-3: 190 90% 50%;
+    --chart-4: 310 80% 60%;
+    --chart-5: 45 93% 47%;
   }
 }
 
@@ -37,20 +37,37 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    @apply bg-background text-foreground font-body antialiased selection:bg-primary/30;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline tracking-tight;
   }
 }
 
-.glass-card {
-  @apply bg-card/40 backdrop-blur-xl border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+.glass-panel {
+  @apply bg-card/40 backdrop-blur-xl border border-white/5 shadow-2xl;
 }
 
-/* Custom scrollbar */
+.neo-gradient {
+  @apply bg-gradient-to-br from-primary via-secondary to-accent;
+}
+
+.glow-text {
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -58,9 +75,5 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border/40 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary/40;
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
