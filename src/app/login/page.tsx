@@ -44,14 +44,19 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         await signUp(auth, db, email, password);
-        toast({ title: "Welcome to GapLogic", description: "Your mock profile has been created locally." });
+        toast({ title: "Welcome to GapLogic", description: "Your account has been created." });
       } else {
         await signIn(auth, email, password);
-        toast({ title: "Welcome Back", description: "Successfully authenticated (Simulated)." });
+        toast({ title: "Welcome Back", description: "Successfully authenticated." });
       }
       router.push('/');
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Auth Failed", description: "An error occurred during simulated login." });
+      let message = "An error occurred during authentication.";
+      if (error.code === 'auth/wrong-password') message = "Incorrect password. Try again.";
+      if (error.code === 'auth/user-not-found') message = "No account found. Please sign up.";
+      if (error.code === 'auth/email-already-in-use') message = "Email already in use.";
+      
+      toast({ variant: "destructive", title: "Auth Failed", description: message });
     } finally {
       setLoading(false);
     }
@@ -68,18 +73,11 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Master the gap between intention and reality.</p>
         </div>
 
-        <Alert className="bg-primary/5 border-primary/20 text-primary-foreground/80">
-          <Info className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs">
-            <strong>Mock Auth Enabled:</strong> No real Firebase account needed. Register first with any 6+ character password to create a local session.
-          </AlertDescription>
-        </Alert>
-
         <Card className="glass-card border-none">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">{isSignUp ? 'Create Local Account' : 'Sign In'}</CardTitle>
+            <CardTitle className="font-headline text-2xl">{isSignUp ? 'Create Account' : 'Sign In'}</CardTitle>
             <CardDescription>
-              {isSignUp ? 'Join the behavioral audit community (Local Session).' : 'Access your cognitive dashboard (Local Session).'}
+              {isSignUp ? 'Join the behavioral audit community.' : 'Access your cognitive dashboard.'}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -129,7 +127,7 @@ export default function LoginPage() {
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
-                {isSignUp ? 'Already have a session? Sign In' : "New here? Register a local session"}
+                {isSignUp ? 'Already have an account? Sign In' : "New here? Create an account"}
               </button>
             </CardFooter>
           </form>

@@ -1,58 +1,43 @@
 
-/**
- * Mock Authentication Service
- * 
- * This service simulates Firebase Auth using local storage.
- * It provides the same interface to the app without requiring real Firebase Auth keys.
- */
-
-export interface MockUser {
-  uid: string;
-  email: string;
-  displayName?: string;
-}
-
-const STORAGE_KEY = 'gaplogic_user';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut as firebaseSignOut,
+  Auth,
+  User
+} from 'firebase/auth';
+import { doc, setDoc, Firestore, serverTimestamp } from 'firebase/firestore';
 
 /**
- * Simulates user registration.
+ * Registers a new user and creates their Firestore profile.
  */
-export async function signUp(auth: any, db: any, email: string, _password: string) {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+export async function signUp(auth: Auth, db: Firestore, email: string, pass: string) {
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  const user = result.user;
   
-  const user: MockUser = {
-    uid: btoa(email).substring(0, 20), // Simple deterministic UID based on email
-    email: email,
-    displayName: email.split('@')[0]
-  };
+  // Initialize user profile in Firestore
+  const userRef = doc(db, 'users', user.uid);
+  await setDoc(userRef, {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || email.split('@')[0],
+    createdAt: serverTimestamp(),
+  });
   
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  window.dispatchEvent(new Event('auth-state-change'));
   return user;
 }
 
 /**
- * Simulates user login.
+ * Authenticates an existing user.
  */
-export async function signIn(auth: any, email: string, _password: string) {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const user: MockUser = {
-    uid: btoa(email).substring(0, 20),
-    email: email,
-    displayName: email.split('@')[0]
-  };
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  window.dispatchEvent(new Event('auth-state-change'));
-  return user;
+export async function signIn(auth: Auth, email: string, pass: string) {
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  return result.user;
 }
 
 /**
- * Simulates logout.
+ * Signs out the current user.
  */
-export async function signOut(_auth: any) {
-  localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new Event('auth-state-change'));
+export async function signOut(auth: Auth) {
+  return firebaseSignOut(auth);
 }
