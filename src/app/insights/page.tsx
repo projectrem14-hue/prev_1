@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
@@ -22,16 +23,20 @@ import Link from 'next/link';
 export default function Insights() {
   const { toast } = useToast();
   const db = useFirestore();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
 
   useEffect(() => {
     document.title = "GapLogic — Behavioral Insights";
-    if (!db) return;
+    if (!db || !user) return;
     async function fetchData() {
       try {
-        const [allInts, allLogs] = await Promise.all([getAllIntentions(db), getAllRealityLogs(db)]);
+        const [allInts, allLogs] = await Promise.all([
+          getAllIntentions(db, user.uid), 
+          getAllRealityLogs(db, user.uid)
+        ]);
         setIntentions(allInts);
         setLogs(allLogs);
       } catch (error) {
@@ -41,7 +46,7 @@ export default function Insights() {
       }
     }
     fetchData();
-  }, [toast, db]);
+  }, [toast, db, user]);
 
   const dailyTrend = useMemo(() => {
     return eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() }).map(day => {
@@ -57,9 +62,11 @@ export default function Insights() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex"><Navigation />
-        <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12"><Skeleton className="h-full w-full rounded-3xl" /></main>
-      </div>
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background text-foreground flex"><Navigation />
+          <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12"><Skeleton className="h-full w-full rounded-3xl" /></main>
+        </div>
+      </ProtectedRoute>
     );
   }
 

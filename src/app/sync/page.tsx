@@ -14,6 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   CheckCircle2, 
   CircleDashed, 
@@ -34,6 +35,7 @@ import Link from 'next/link';
 export default function RealitySync() {
   const { toast } = useToast();
   const db = useFirestore();
+  const { user } = useAuth();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [loading, setLoading] = useState(true);
@@ -51,12 +53,12 @@ export default function RealitySync() {
   });
 
   const fetchData = useCallback(async (date: string) => {
-    if (!db) return;
+    if (!db || !user) return;
     setLoading(true);
     try {
       const [fetchedIntentions, fetchedLogs] = await Promise.all([
-        getIntentionsByDate(db, date),
-        getRealityLogsByDate(db, date)
+        getIntentionsByDate(db, user.uid, date),
+        getRealityLogsByDate(db, user.uid, date)
       ]);
       setIntentions(fetchedIntentions);
       setLogs(fetchedLogs);
@@ -65,12 +67,12 @@ export default function RealitySync() {
     } finally {
       setLoading(false);
     }
-  }, [toast, db]);
+  }, [toast, db, user]);
 
   useEffect(() => {
     document.title = "GapLogic — Reality Sync";
-    if (db) fetchData(selectedDate);
-  }, [selectedDate, fetchData, db]);
+    if (db && user) fetchData(selectedDate);
+  }, [selectedDate, fetchData, db, user]);
 
   const handleToggleForm = (intention: Intention, existingLog?: RealityLog) => {
     if (expandedId === intention.id) {
@@ -92,10 +94,10 @@ export default function RealitySync() {
   };
 
   const handleSaveLog = async (intentionId: string) => {
-    if (!db) return;
+    if (!db || !user) return;
     setSubmitting(true);
     try {
-      await addRealityLog(db, {
+      await addRealityLog(db, user.uid, {
         intentionId,
         completed: formData.completed,
         actualEffort: formData.actualEffort,

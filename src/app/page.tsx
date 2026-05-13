@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   Target, 
   Zap, 
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const { toast } = useToast();
   const db = useFirestore();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
@@ -40,11 +42,11 @@ export default function Dashboard() {
   useEffect(() => {
     document.title = "GapLogic — Dashboard";
     async function fetchData() {
-      if (!db) return;
+      if (!db || !user) return;
       try {
         const [allIntentions, allLogs] = await Promise.all([
-          getAllIntentions(db),
-          getAllRealityLogs(db)
+          getAllIntentions(db, user.uid),
+          getAllRealityLogs(db, user.uid)
         ]);
 
         setIntentions(allIntentions);
@@ -97,23 +99,25 @@ export default function Dashboard() {
     }
 
     fetchData();
-  }, [toast, db]);
+  }, [toast, db, user]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex">
-        <Navigation />
-        <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
-          <div className="space-y-4 mb-10">
-            <Skeleton className="h-12 w-[300px]" />
-            <Skeleton className="h-6 w-[400px]" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
-          </div>
-          <Skeleton className="h-[400px] w-full rounded-3xl" />
-        </main>
-      </div>
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background text-foreground flex">
+          <Navigation />
+          <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
+            <div className="space-y-4 mb-10">
+              <Skeleton className="h-12 w-[300px]" />
+              <Skeleton className="h-6 w-[400px]" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+            </div>
+            <Skeleton className="h-[400px] w-full rounded-3xl" />
+          </main>
+        </div>
+      </ProtectedRoute>
     );
   }
 

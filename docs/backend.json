@@ -37,13 +37,13 @@
     "providers": ["google.com"]
   },
   "firestore": {
-    "/intentions/{intentionId}": {
+    "/users/{userId}/intentions/{intentionId}": {
       "schema": "Intention",
-      "description": "Collection of user goals and intentions."
+      "description": "User specific collection of goals and intentions."
     },
-    "/realityLogs/{logId}": {
+    "/users/{userId}/realityLogs/{logId}": {
       "schema": "RealityLog",
-      "description": "Collection of actual behavioral outcomes."
+      "description": "User specific collection of actual behavioral outcomes."
     }
   }
 }

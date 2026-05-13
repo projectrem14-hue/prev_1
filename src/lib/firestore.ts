@@ -1,3 +1,4 @@
+
 import { 
   collection, 
   addDoc, 
@@ -13,10 +14,10 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
- * Adds a new intention to the Firestore collection.
+ * Adds a new intention to the user's specific Firestore collection.
  */
-export function addIntention(db: Firestore, data: Omit<Intention, 'id' | 'createdAt'>) {
-  const colRef = collection(db, 'intentions');
+export function addIntention(db: Firestore, userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
+  const colRef = collection(db, 'users', userId, 'intentions');
   const payload = {
     ...data,
     createdAt: serverTimestamp(),
@@ -24,7 +25,7 @@ export function addIntention(db: Firestore, data: Omit<Intention, 'id' | 'create
 
   addDoc(colRef, payload).catch(async (error) => {
     const permissionError = new FirestorePermissionError({
-      path: 'intentions',
+      path: `users/${userId}/intentions`,
       operation: 'create',
       requestResourceData: payload,
     });
@@ -33,10 +34,10 @@ export function addIntention(db: Firestore, data: Omit<Intention, 'id' | 'create
 }
 
 /**
- * Adds a new reality log to the Firestore collection.
+ * Adds a new reality log to the user's specific Firestore collection.
  */
-export function addRealityLog(db: Firestore, data: Omit<RealityLog, 'id' | 'createdAt'>) {
-  const colRef = collection(db, 'realityLogs');
+export function addRealityLog(db: Firestore, userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
+  const colRef = collection(db, 'users', userId, 'realityLogs');
   const payload = {
     ...data,
     createdAt: serverTimestamp(),
@@ -44,7 +45,7 @@ export function addRealityLog(db: Firestore, data: Omit<RealityLog, 'id' | 'crea
 
   addDoc(colRef, payload).catch(async (error) => {
     const permissionError = new FirestorePermissionError({
-      path: 'realityLogs',
+      path: `users/${userId}/realityLogs`,
       operation: 'create',
       requestResourceData: payload,
     });
@@ -53,10 +54,10 @@ export function addRealityLog(db: Firestore, data: Omit<RealityLog, 'id' | 'crea
 }
 
 /**
- * Fetches intentions for a specific date (YYYY-MM-DD).
+ * Fetches intentions for a specific date (YYYY-MM-DD) for a specific user.
  */
-export async function getIntentionsByDate(db: Firestore, date: string): Promise<Intention[]> {
-  const colRef = collection(db, 'intentions');
+export async function getIntentionsByDate(db: Firestore, userId: string, date: string): Promise<Intention[]> {
+  const colRef = collection(db, 'users', userId, 'intentions');
   const q = query(
     colRef, 
     where('date', '==', date), 
@@ -70,7 +71,7 @@ export async function getIntentionsByDate(db: Firestore, date: string): Promise<
     } as Intention));
   } catch (error) {
     const permissionError = new FirestorePermissionError({
-      path: 'intentions',
+      path: `users/${userId}/intentions`,
       operation: 'list',
     });
     errorEmitter.emit('permission-error', permissionError);
@@ -79,10 +80,10 @@ export async function getIntentionsByDate(db: Firestore, date: string): Promise<
 }
 
 /**
- * Fetches reality logs for a specific date (YYYY-MM-DD).
+ * Fetches reality logs for a specific date (YYYY-MM-DD) for a specific user.
  */
-export async function getRealityLogsByDate(db: Firestore, date: string): Promise<RealityLog[]> {
-  const colRef = collection(db, 'realityLogs');
+export async function getRealityLogsByDate(db: Firestore, userId: string, date: string): Promise<RealityLog[]> {
+  const colRef = collection(db, 'users', userId, 'realityLogs');
   const q = query(colRef, where('date', '==', date));
   try {
     const snapshot = await getDocs(q);
@@ -92,7 +93,7 @@ export async function getRealityLogsByDate(db: Firestore, date: string): Promise
     } as RealityLog));
   } catch (error) {
     const permissionError = new FirestorePermissionError({
-      path: 'realityLogs',
+      path: `users/${userId}/realityLogs`,
       operation: 'list',
     });
     errorEmitter.emit('permission-error', permissionError);
@@ -101,10 +102,10 @@ export async function getRealityLogsByDate(db: Firestore, date: string): Promise
 }
 
 /**
- * Fetches all intentions.
+ * Fetches all intentions for a specific user.
  */
-export async function getAllIntentions(db: Firestore): Promise<Intention[]> {
-  const colRef = collection(db, 'intentions');
+export async function getAllIntentions(db: Firestore, userId: string): Promise<Intention[]> {
+  const colRef = collection(db, 'users', userId, 'intentions');
   const q = query(
     colRef, 
     orderBy('date', 'desc'), 
@@ -118,7 +119,7 @@ export async function getAllIntentions(db: Firestore): Promise<Intention[]> {
     } as Intention));
   } catch (error) {
     const permissionError = new FirestorePermissionError({
-      path: 'intentions',
+      path: `users/${userId}/intentions`,
       operation: 'list',
     });
     errorEmitter.emit('permission-error', permissionError);
@@ -127,10 +128,10 @@ export async function getAllIntentions(db: Firestore): Promise<Intention[]> {
 }
 
 /**
- * Fetches all reality logs.
+ * Fetches all reality logs for a specific user.
  */
-export async function getAllRealityLogs(db: Firestore): Promise<RealityLog[]> {
-  const colRef = collection(db, 'realityLogs');
+export async function getAllRealityLogs(db: Firestore, userId: string): Promise<RealityLog[]> {
+  const colRef = collection(db, 'users', userId, 'realityLogs');
   const q = query(colRef, orderBy('date', 'desc'));
   try {
     const snapshot = await getDocs(q);
@@ -140,7 +141,7 @@ export async function getAllRealityLogs(db: Firestore): Promise<RealityLog[]> {
     } as RealityLog));
   } catch (error) {
     const permissionError = new FirestorePermissionError({
-      path: 'realityLogs',
+      path: `users/${userId}/realityLogs`,
       operation: 'list',
     });
     errorEmitter.emit('permission-error', permissionError);

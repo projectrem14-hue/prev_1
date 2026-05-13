@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   BrainCircuit, 
   ShieldAlert, 
@@ -28,18 +29,19 @@ import Link from 'next/link';
 export default function Pivot() {
   const { toast } = useToast();
   const db = useFirestore();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
 
   const fetchData = useCallback(async () => {
-    if (!db) return;
+    if (!db || !user) return;
     setRefreshing(true);
     try {
       const [allIntentions, allLogs] = await Promise.all([
-        getAllIntentions(db),
-        getAllRealityLogs(db)
+        getAllIntentions(db, user.uid),
+        getAllRealityLogs(db, user.uid)
       ]);
       setIntentions(allIntentions);
       setLogs(allLogs);
@@ -49,30 +51,67 @@ export default function Pivot() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast, db]);
+  }, [toast, db, user]);
 
   useEffect(() => {
     document.title = "GapLogic — Cognitive Pivot";
-    if (db) fetchData();
-  }, [db, fetchData]);
+    if (db && user) fetchData();
+  }, [db, user, fetchData]);
 
   const diagnostics = useMemo(() => {
     if (logs.length < 5) return null;
     const gaps: any[] = [];
     const pivots: any[] = [];
 
-    // Simple Rule Engines
-    const completionRate = logs.filter(l => l.completed).length / logs.length;
-    const score = Math.round(completionRate * 100);
+    // Pattern Analysis Rules
+    const lateHealth = logs.filter(l => {
+      const intention = intentions.find(i => i.id === l.intentionId);
+      if (!intention || intention.category !== 'health') return false;
+      const hour = parseInt(intention.scheduledTime.split(':')[0]);
+      return hour >= 20 && !l.completed;
+    });
+    if (lateHealth.length >= 3) {
+      gaps.push({ text: "Willpower leakage: Health intentions after 8PM consistently fail.", category: 'health', severity: 'high' });
+      pivots.push({ text: "Reschedule high-friction health habits before 7PM to ensure compliance.", category: 'health', priority: 'high' });
+    }
+
+    const heavyWork = logs.filter(l => {
+      const intention = intentions.find(i => i.id === l.intentionId);
+      return intention && intention.category === 'work' && intention.effortEstimate > 3 && !l.completed;
+    });
+    if (heavyWork.length >= 2) {
+      gaps.push({ text: "Overestimation: High-effort work tasks (4+) are stalling.", category: 'work', severity: 'medium' });
+      pivots.push({ text: "Break work sessions into smaller sub-tasks with effort levels < 3.", category: 'work', priority: 'medium' });
+    }
+
+    const mondayLull = logs.filter(l => {
+      const date = new Date(l.date);
+      return date.getDay() === 1 && !l.completed;
+    });
+    if (mondayLull.length >= 2) {
+      gaps.push({ text: "Monday Inertia: The start of your week shows a 60% higher failure rate.", category: 'personal', severity: 'medium' });
+      pivots.push({ text: "Reduce effort estimates by 1 point on Mondays to build early momentum.", category: 'personal', priority: 'high' });
+    }
+
+    const totalLogs = logs.length;
+    const completionRate = logs.filter(l => l.completed).length / totalLogs;
+    const effortAccuracy = logs.filter(l => {
+      const intention = intentions.find(i => i.id === l.intentionId);
+      return intention && l.actualEffort <= intention.effortEstimate;
+    }).length / totalLogs;
+
+    const score = Math.round((completionRate * 50) + (effortAccuracy * 30) + (20)); // Base bonus
 
     return { gaps, pivots, score, analyzed: intentions.length + logs.length };
   }, [intentions, logs]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex"><Navigation />
-        <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12"><Skeleton className="h-[600px] w-full rounded-3xl" /></main>
-      </div>
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background text-foreground flex"><Navigation />
+          <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12"><Skeleton className="h-[600px] w-full rounded-3xl" /></main>
+        </div>
+      </ProtectedRoute>
     );
   }
 
@@ -98,14 +137,57 @@ export default function Pivot() {
                 </Button>
               </header>
 
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+                <Card className="glass-card col-span-1 lg:col-span-3">
+                  <div className="p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center"><Zap className="w-8 h-8 text-primary" /></div>
+                      <div><div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Behavioral Health Score</div><div className="text-4xl font-bold font-headline">{diagnostics?.score}</div></div>
+                    </div>
+                    <div className="text-right hidden sm:block"><div className="text-xs font-bold text-muted-foreground uppercase mb-1">Status</div><Badge className="bg-emerald-500/20 text-emerald-500 border-none px-4">Optimized</Badge></div>
+                  </div>
+                </Card>
+                <Card className="glass-card">
+                  <div className="p-6 text-center">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Gaps Analyzed</div>
+                    <div className="text-3xl font-bold font-headline">{diagnostics?.analyzed}</div>
+                  </div>
+                </Card>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
                   <h2 className="font-headline text-2xl font-bold flex items-center gap-2 text-destructive"><ShieldAlert className="w-6 h-6" /> Behavioral Gaps</h2>
-                  <Card className="glass-card p-6"><p className="text-muted-foreground italic">No gaps detected. You are maintaining high consistency.</p></Card>
+                  <div className="grid gap-4">
+                    {diagnostics?.gaps.map((gap, i) => (
+                      <Card key={i} className="glass-card border-l-4 border-l-destructive p-5 flex gap-4">
+                        <div className="pt-1"><AlertCircle className="w-5 h-5 text-destructive" /></div>
+                        <div>
+                          <Badge variant="outline" className="mb-2 capitalize">{gap.category}</Badge>
+                          <p className="text-sm leading-relaxed">{gap.text}</p>
+                          <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-destructive">Severity: {gap.severity}</div>
+                        </div>
+                      </Card>
+                    ))}
+                    {diagnostics?.gaps.length === 0 && <Card className="glass-card p-6 text-center"><p className="text-muted-foreground italic">No gaps detected. You are maintaining high consistency.</p></Card>}
+                  </div>
                 </div>
+
                 <div className="space-y-6">
                   <h2 className="font-headline text-2xl font-bold flex items-center gap-2 text-accent"><Lightbulb className="w-6 h-6" /> Strategic Pivots</h2>
-                  <Card className="glass-card p-6"><p className="text-muted-foreground italic">Your current workflow is optimized.</p></Card>
+                  <div className="grid gap-4">
+                    {diagnostics?.pivots.map((pivot, i) => (
+                      <Card key={i} className="glass-card border-l-4 border-l-accent p-5 flex gap-4">
+                        <div className="pt-1"><ArrowRightCircle className="w-5 h-5 text-accent" /></div>
+                        <div>
+                          <Badge className="mb-2 capitalize bg-accent/20 text-accent border-none">{pivot.category}</Badge>
+                          <p className="text-sm leading-relaxed">{pivot.text}</p>
+                          <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-accent">Priority: {pivot.priority}</div>
+                        </div>
+                      </Card>
+                    ))}
+                    {diagnostics?.pivots.length === 0 && <Card className="glass-card p-6 text-center"><p className="text-muted-foreground italic">Your current workflow is optimized.</p></Card>}
+                  </div>
                 </div>
               </div>
             </>

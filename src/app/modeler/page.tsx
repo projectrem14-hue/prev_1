@@ -16,12 +16,14 @@ import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function Modeler() {
   const { toast } = useToast();
   const db = useFirestore();
+  const { user } = useAuth();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [loading, setLoading] = useState(true);
@@ -38,27 +40,27 @@ export default function Modeler() {
   });
 
   const fetchIntentions = useCallback(async (date: string) => {
-    if (!db) return;
+    if (!db || !user) return;
     setLoading(true);
     try {
-      const data = await getIntentionsByDate(db, date);
+      const data = await getIntentionsByDate(db, user.uid, date);
       setIntentions(data);
     } catch (error) {
       toast({ variant: "destructive", title: "Load Error", description: "Failed to load intentions." });
     } finally {
       setLoading(false);
     }
-  }, [toast, db]);
+  }, [toast, db, user]);
 
   useEffect(() => {
     document.title = "GapLogic — Intention Modeler";
-    if (db) {
+    if (db && user) {
       fetchIntentions(selectedDate);
     }
-  }, [selectedDate, fetchIntentions, db]);
+  }, [selectedDate, fetchIntentions, db, user]);
 
   const handleAdd = async () => {
-    if (!db) return;
+    if (!db || !user) return;
     if (!formData.title) {
       toast({ variant: "destructive", title: "Missing Information", description: "Please enter a title." });
       return;
@@ -66,7 +68,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      await addIntention(db, {
+      await addIntention(db, user.uid, {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
