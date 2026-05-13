@@ -6,8 +6,7 @@ import { firebaseConfig } from './config';
 
 /**
  * Initializes Firebase services safely.
- * Returns dummy objects during SSR to prevent crashes, as these instances
- * should only be used within Client Components after hydration.
+ * Returns dummy objects during SSR to prevent crashes.
  */
 export function initializeFirebase(): {
   firebaseApp: FirebaseApp;
@@ -22,16 +21,8 @@ export function initializeFirebase(): {
     };
   }
 
-  // Ensure we don't attempt to initialize with an empty config which causes SDK errors
-  if (!firebaseConfig.apiKey) {
-    console.warn("Firebase Configuration Warning: API Key is missing. Connectivity will be limited.");
-    return { 
-      firebaseApp: {} as FirebaseApp, 
-      firestore: {} as Firestore, 
-      auth: {} as Auth 
-    };
-  }
-
+  // We attempt to initialize even with partial config to allow Firestore to try and connect
+  // If the user hasn't provided keys, the SDK will error only when a call is made.
   try {
     const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const firestore = getFirestore(firebaseApp);

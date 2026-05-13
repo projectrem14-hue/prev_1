@@ -43,19 +43,14 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         await signUp(auth, db, email, password);
-        toast({ title: "Welcome to GapLogic", description: "Your account and profile have been created." });
+        toast({ title: "Welcome to GapLogic", description: "Your mock profile has been created locally." });
       } else {
         await signIn(auth, email, password);
-        toast({ title: "Welcome Back", description: "Successfully authenticated." });
+        toast({ title: "Welcome Back", description: "Successfully authenticated (Simulated)." });
       }
       router.push('/');
     } catch (error: any) {
-      let message = error.message || "An error occurred during authentication.";
-      if (error.code === 'auth/wrong-password') message = "Incorrect password. Try again.";
-      if (error.code === 'auth/user-not-found') message = "No account found. Please sign up.";
-      if (error.code === 'auth/email-already-in-use') message = "Email is already registered.";
-      
-      toast({ variant: "destructive", title: "Auth Failed", description: message });
+      toast({ variant: "destructive", title: "Auth Failed", description: "An error occurred during simulated login." });
     } finally {
       setLoading(false);
     }
@@ -74,9 +69,9 @@ export default function LoginPage() {
 
         <Card className="glass-card border-none">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">{isSignUp ? 'Create Account' : 'Sign In'}</CardTitle>
+            <CardTitle className="font-headline text-2xl">{isSignUp ? 'Create Local Account' : 'Sign In'}</CardTitle>
             <CardDescription>
-              {isSignUp ? 'Join the behavioral audit community.' : 'Access your cognitive dashboard.'}
+              {isSignUp ? 'Join the behavioral audit community (Local Session).' : 'Access your cognitive dashboard (Local Session).'}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -119,14 +114,14 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20" disabled={loading}>
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? <><UserPlus className="w-5 h-5 mr-2" /> Sign Up</> : <><LogIn className="w-5 h-5 mr-2" /> Sign In</>)}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? <><UserPlus className="w-5 h-5 mr-2" /> Register</> : <><LogIn className="w-5 h-5 mr-2" /> Enter</>)}
               </Button>
               <button 
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                {isSignUp ? 'Already have a session? Sign In' : "New here? Register a local session"}
               </button>
             </CardFooter>
           </form>
