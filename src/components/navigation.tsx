@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Pencil, RefreshCw, BrainCircuit, BarChart3, Settings, LogOut } from 'lucide-react';
-import { signOut } from '@/lib/auth';
-import { useAuth } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
@@ -19,18 +18,14 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const auth = useAuth();
   const router = useRouter();
+  const { logout } = useAuth();
   const { toast } = useToast();
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({ title: "Signed out", description: "Come back soon to bridge the gap." });
-      router.push('/login');
-    } catch (error) {
-      toast({ variant: "destructive", title: "Logout Error", description: "Failed to sign out properly." });
-    }
+  const handleLogout = () => {
+    logout();
+    toast({ title: "Signed out", description: "Come back soon to bridge the gap." });
+    router.push('/login');
   };
 
   return (

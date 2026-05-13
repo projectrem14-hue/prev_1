@@ -16,14 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function Modeler() {
   const { toast } = useToast();
-  const db = useFirestore();
   const { user } = useAuth();
   const today = format(new Date(), 'yyyy-MM-dd');
   
@@ -41,27 +39,27 @@ export default function Modeler() {
   });
 
   const fetchIntentions = useCallback(async (date: string) => {
-    if (!db || !user) return;
+    if (!user) return;
     setLoading(true);
     try {
-      const data = await getIntentionsByDate(db, user.uid, date);
+      const data = await getIntentionsByDate(null, user.uid, date);
       setIntentions(data);
     } catch (error) {
       toast({ variant: "destructive", title: "Load Error", description: "Failed to load intentions." });
     } finally {
       setLoading(false);
     }
-  }, [toast, db, user]);
+  }, [toast, user]);
 
   useEffect(() => {
     document.title = "GapLogic — Intention Modeler";
-    if (db && user) {
+    if (user) {
       fetchIntentions(selectedDate);
     }
-  }, [selectedDate, fetchIntentions, db, user]);
+  }, [selectedDate, fetchIntentions, user]);
 
   const handleAdd = async () => {
-    if (!db || !user) return;
+    if (!user) return;
     if (!formData.title) {
       toast({ variant: "destructive", title: "Missing Information", description: "Please enter a title." });
       return;
@@ -69,7 +67,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      await addIntention(db, user.uid, {
+      await addIntention(user.uid, {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -81,7 +79,7 @@ export default function Modeler() {
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3 }));
       fetchIntentions(selectedDate);
     } catch (error) {
-      // Handled centrally
+      toast({ variant: "destructive", title: "Add Error", description: "Failed to save intention." });
     } finally {
       setSubmitting(false);
     }

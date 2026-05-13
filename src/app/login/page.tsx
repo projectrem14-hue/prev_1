@@ -3,37 +3,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp, signIn } from '@/lib/auth';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, Loader2, Mail, Lock, UserPlus, LogIn, Info } from 'lucide-react';
+import { BrainCircuit, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const auth = useFirebaseAuth();
-  const db = useFirestore();
+  const { login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    if (isSignUp && password !== confirmPassword) {
-      toast({ variant: "destructive", title: "Auth Error", description: "Passwords do not match." });
-      setLoading(false);
-      return;
-    }
 
     if (password.length < 6) {
       toast({ variant: "destructive", title: "Auth Error", description: "Password must be at least 6 characters." });
@@ -41,25 +30,10 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      if (isSignUp) {
-        await signUp(auth, db, email, password);
-        toast({ title: "Welcome to GapLogic", description: "Your account has been created." });
-      } else {
-        await signIn(auth, email, password);
-        toast({ title: "Welcome Back", description: "Successfully authenticated." });
-      }
-      router.push('/');
-    } catch (error: any) {
-      let message = "An error occurred during authentication.";
-      if (error.code === 'auth/wrong-password') message = "Incorrect password. Try again.";
-      if (error.code === 'auth/user-not-found') message = "No account found. Please sign up.";
-      if (error.code === 'auth/email-already-in-use') message = "Email already in use.";
-      
-      toast({ variant: "destructive", title: "Auth Failed", description: message });
-    } finally {
-      setLoading(false);
-    }
+    // Mock Login/Signup
+    login(email);
+    toast({ title: "Welcome to GapLogic", description: "Local session started." });
+    router.push('/');
   };
 
   return (
@@ -70,14 +44,14 @@ export default function LoginPage() {
             <BrainCircuit className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-4xl font-bold font-headline tracking-tight">GapLogic</h1>
-          <p className="text-muted-foreground">Master the gap between intention and reality.</p>
+          <p className="text-muted-foreground text-sm">Enter any email/password to begin your behavioral audit.</p>
         </div>
 
         <Card className="glass-card border-none">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">{isSignUp ? 'Create Account' : 'Sign In'}</CardTitle>
-            <CardDescription>
-              {isSignUp ? 'Join the behavioral audit community.' : 'Access your cognitive dashboard.'}
+            <CardTitle className="font-headline text-2xl text-center">Prototype Access</CardTitle>
+            <CardDescription className="text-center">
+              No registration required. This session is local to your browser.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -104,31 +78,11 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      id="confirmPassword" type="password" placeholder="••••••••" 
-                      value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                      className="pl-10 bg-background/50 h-12 rounded-xl" required
-                    />
-                  </div>
-                </div>
-              )}
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter>
               <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20" disabled={loading}>
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? <><UserPlus className="w-5 h-5 mr-2" /> Register</> : <><LogIn className="w-5 h-5 mr-2" /> Enter</>)}
+                {loading ? "Launching..." : "Enter Dashboard"}
               </Button>
-              <button 
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                {isSignUp ? 'Already have an account? Sign In' : "New here? Create an account"}
-              </button>
             </CardFooter>
           </form>
         </Card>
