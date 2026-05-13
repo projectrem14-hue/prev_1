@@ -29,7 +29,7 @@ const ActualBehaviorSchema = z.object({
   actualTimeSpent: z.string().optional().describe('Actual time spent on the activity (e.g., "30 minutes").'),
 });
 
-export const AnalyzeBehavioralDiscrepanciesInputSchema = z.object({
+const AnalyzeBehavioralDiscrepanciesInputSchema = z.object({
   plannedIntentions: z.array(PlannedIntentionSchema).describe('A list of daily planned tasks, goals, and intentions.'),
   actualBehaviors: z.array(ActualBehaviorSchema).describe('A list of recorded actual actions, completion statuses, and any relevant notes.'),
   analysisContext: z.string().optional().describe('Additional context for the analysis, such as the date, user mood, or specific external events.'),
@@ -45,7 +45,7 @@ const DiscrepancyDetailSchema = z.object({
   suggestedInsight: z.string().describe('A concise, actionable insight or takeaway derived from this specific discrepancy.'),
 });
 
-export const AnalyzeBehavioralDiscrepanciesOutputSchema = z.object({
+const AnalyzeBehavioralDiscrepanciesOutputSchema = z.object({
   discrepancies: z.array(DiscrepancyDetailSchema).describe('A list of identified discrepancies, their explanations, root causes, and insights.'),
 });
 export type AnalyzeBehavioralDiscrepanciesOutput = z.infer<typeof AnalyzeBehavioralDiscrepanciesOutputSchema>;
