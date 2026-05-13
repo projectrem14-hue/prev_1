@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +14,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   
   const { login } = useAuth();
   const router = useRouter();
@@ -30,9 +30,12 @@ export default function LoginPage() {
       return;
     }
 
-    // Mock Login/Signup
+    // Handle session creation
     login(email);
-    toast({ title: "Welcome to GapLogic", description: "Local session started." });
+    toast({ 
+      title: isSignUp ? "Account Created" : "Welcome Back", 
+      description: `Logged in as ${email}` 
+    });
     router.push('/');
   };
 
@@ -44,14 +47,16 @@ export default function LoginPage() {
             <BrainCircuit className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-4xl font-bold font-headline tracking-tight">GapLogic</h1>
-          <p className="text-muted-foreground text-sm">Enter any email/password to begin your behavioral audit.</p>
+          <p className="text-muted-foreground text-sm">Analyze and bridge the gap between intention and reality.</p>
         </div>
 
         <Card className="glass-card border-none">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl text-center">Prototype Access</CardTitle>
+            <CardTitle className="font-headline text-2xl text-center">
+              {isSignUp ? "Create Account" : "Sign In"}
+            </CardTitle>
             <CardDescription className="text-center">
-              No registration required. This session is local to your browser.
+              {isSignUp ? "Join GapLogic to start your behavioral audit." : "Enter your credentials to access your dashboard."}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -78,10 +83,30 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      id="confirm-password" type="password" placeholder="••••••••" 
+                      className="pl-10 bg-background/50 h-12 rounded-xl" required
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20" disabled={loading}>
-                {loading ? "Launching..." : "Enter Dashboard"}
+                {loading ? "Processing..." : (isSignUp ? "Sign Up" : "Sign In")}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full text-muted-foreground hover:text-primary"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
               </Button>
             </CardFooter>
           </form>
