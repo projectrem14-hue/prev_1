@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 import { 
   RefreshCw, 
   CheckCircle2, 
@@ -33,6 +33,7 @@ import Link from 'next/link';
 
 export default function RealitySync() {
   const { toast } = useToast();
+  const db = useFirestore();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [loading, setLoading] = useState(true);
@@ -50,11 +51,12 @@ export default function RealitySync() {
   });
 
   const fetchData = useCallback(async (date: string) => {
+    if (!db) return;
     setLoading(true);
     try {
       const [fetchedIntentions, fetchedLogs] = await Promise.all([
-        getIntentionsByDate(date),
-        getRealityLogsByDate(date)
+        getIntentionsByDate(db, date),
+        getRealityLogsByDate(db, date)
       ]);
       setIntentions(fetchedIntentions);
       setLogs(fetchedLogs);
@@ -67,12 +69,14 @@ export default function RealitySync() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, db]);
 
   useEffect(() => {
     document.title = "GapLogic — Reality Sync";
-    fetchData(selectedDate);
-  }, [selectedDate, fetchData]);
+    if (db) {
+      fetchData(selectedDate);
+    }
+  }, [selectedDate, fetchData, db]);
 
   const handleToggleForm = (intention: Intention, existingLog?: RealityLog) => {
     if (expandedId === intention.id) {
@@ -94,9 +98,10 @@ export default function RealitySync() {
   };
 
   const handleSaveLog = async (intentionId: string) => {
+    if (!db) return;
     setSubmitting(true);
     try {
-      addRealityLog({
+      addRealityLog(db, {
         intentionId,
         completed: formData.completed,
         actualEffort: formData.actualEffort,
@@ -109,7 +114,7 @@ export default function RealitySync() {
       setExpandedId(null);
       setTimeout(() => fetchData(selectedDate), 500);
     } catch (error) {
-      toast({ variant: "destructive", title: "Sync Failed", description: "Could not save reality log." });
+      // Handled centrally
     } finally {
       setSubmitting(false);
     }

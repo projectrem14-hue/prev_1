@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 import { 
   Target, 
   Zap, 
@@ -20,9 +20,11 @@ import {
 import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
 import { Intention, RealityLog } from '@/lib/schema';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const db = useFirestore();
   const [loading, setLoading] = useState(true);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
@@ -36,10 +38,11 @@ export default function Dashboard() {
   useEffect(() => {
     document.title = "GapLogic — Dashboard";
     async function fetchData() {
+      if (!db) return;
       try {
         const [allIntentions, allLogs] = await Promise.all([
-          getAllIntentions(),
-          getAllRealityLogs()
+          getAllIntentions(db),
+          getAllRealityLogs(db)
         ]);
 
         setIntentions(allIntentions);
@@ -93,7 +96,7 @@ export default function Dashboard() {
     }
 
     fetchData();
-  }, [toast]);
+  }, [toast, db]);
 
   if (loading) {
     return (

@@ -1,45 +1,44 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Navigation } from '@/components/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 import { 
   BrainCircuit, 
-  RefreshCw, 
   ShieldAlert, 
   Lightbulb, 
   Loader2, 
   Target, 
   Clock, 
   Zap,
-  TrendingUp,
   ArrowRightCircle
 } from 'lucide-react';
 import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
 import { Intention, RealityLog } from '@/lib/schema';
-import { format, parseISO, getDay } from 'date-fns';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 export default function Pivot() {
   const { toast } = useToast();
+  const db = useFirestore();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!db) return;
     setRefreshing(true);
     try {
       const [allIntentions, allLogs] = await Promise.all([
-        getAllIntentions(),
-        getAllRealityLogs()
+        getAllIntentions(db),
+        getAllRealityLogs(db)
       ]);
       setIntentions(allIntentions);
       setLogs(allLogs);
@@ -49,12 +48,14 @@ export default function Pivot() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [toast, db]);
 
   useEffect(() => {
     document.title = "GapLogic — Cognitive Pivot";
-    fetchData();
-  }, [toast]);
+    if (db) {
+      fetchData();
+    }
+  }, [db, fetchData]);
 
   const diagnostics = useMemo(() => {
     if (logs.length < 5) return null;
@@ -82,7 +83,7 @@ export default function Pivot() {
       pivots.push({ title: 'Atomic Decomposition', desc: 'Break high-effort work into sub-60 minute chunks.', cat: 'work', icon: Zap });
     }
 
-    const completionRate = logs.filter(l => l.completed).length / logs.length;
+    const completionRate = logs.length > 0 ? logs.filter(l => l.completed).length / logs.length : 0;
     const score = Math.round(completionRate * 100);
 
     return { gaps, pivots, score, analyzed: intentions.length + logs.length };

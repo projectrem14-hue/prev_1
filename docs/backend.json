@@ -1,0 +1,49 @@
+
+{
+  "entities": {
+    "Intention": {
+      "title": "Intention",
+      "description": "A user's planned habit or goal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["health", "work", "learning", "personal"] },
+        "effortEstimate": { "type": "number", "description": "1-5 intensity scale" },
+        "scheduledTime": { "type": "string", "description": "HH:MM format" },
+        "date": { "type": "string", "description": "YYYY-MM-DD format" },
+        "createdAt": { "type": "object", "description": "Firestore server timestamp" }
+      },
+      "required": ["title", "category", "effortEstimate", "scheduledTime", "date"]
+    },
+    "RealityLog": {
+      "title": "RealityLog",
+      "description": "The recorded outcome of a planned intention.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "intentionId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "actualEffort": { "type": "number", "description": "1-5 intensity scale" },
+        "frictionNote": { "type": "string" },
+        "contextNote": { "type": "string" },
+        "date": { "type": "string", "description": "YYYY-MM-DD format" },
+        "createdAt": { "type": "object", "description": "Firestore server timestamp" }
+      },
+      "required": ["intentionId", "completed", "actualEffort", "date"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/intentions/{intentionId}": {
+      "schema": "Intention",
+      "description": "Collection of user goals and intentions."
+    },
+    "/realityLogs/{logId}": {
+      "schema": "RealityLog",
+      "description": "Collection of actual behavioral outcomes."
+    }
+  }
+}

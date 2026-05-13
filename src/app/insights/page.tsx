@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, BarChart, Bar, Cell
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
-import { TrendingUp, Target, Brain, Target as TargetIcon } from 'lucide-react';
+import { TrendingUp, Brain } from 'lucide-react';
 import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
 import { Intention, RealityLog } from '@/lib/schema';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
@@ -19,15 +20,21 @@ import Link from 'next/link';
 
 export default function Insights() {
   const { toast } = useToast();
+  const db = useFirestore();
   const [loading, setLoading] = useState(true);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
 
   useEffect(() => {
     document.title = "GapLogic — Behavioral Insights";
+    if (!db) return;
+
     async function fetchData() {
       try {
-        const [allIntentions, allLogs] = await Promise.all([getAllIntentions(), getAllRealityLogs()]);
+        const [allIntentions, allLogs] = await Promise.all([
+          getAllIntentions(db), 
+          getAllRealityLogs(db)
+        ]);
         setIntentions(allIntentions);
         setLogs(allLogs);
       } catch (error) {
@@ -37,7 +44,7 @@ export default function Insights() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, db]);
 
   const stats = useMemo(() => {
     if (intentions.length === 0) return null;
@@ -48,11 +55,16 @@ export default function Insights() {
       const catDone = logs.filter(l => intentions.find(i => i.id === l.intentionId)?.category === cat && l.completed);
       return { cat, rate: catInt.length > 0 ? catDone.length / catInt.length : 0 };
     });
+    
+    const sorted = [...catPerf].sort((a,b) => b.rate - a.rate);
+    const best = sorted[0]?.cat || 'none';
+    const worst = sorted[sorted.length - 1]?.cat || 'none';
+
     return {
       total: intentions.length,
-      rate: Math.round((completed / intentions.length) * 100),
-      best: catPerf.sort((a,b) => b.rate - a.rate)[0].cat,
-      worst: catPerf.sort((a,b) => a.rate - b.rate)[0].cat
+      rate: Math.round((completed / intentions.length) * 100) || 0,
+      best,
+      worst
     };
   }, [intentions, logs]);
 
@@ -61,7 +73,10 @@ export default function Insights() {
       const d = format(day, 'yyyy-MM-dd');
       const dayInt = intentions.filter(i => i.date === d);
       const dayDone = logs.filter(l => l.date === d && l.completed);
-      return { name: format(day, 'MMM dd'), rate: dayInt.length > 0 ? Math.round((dayDone.length / dayInt.length) * 100) : 0 };
+      return { 
+        name: format(day, 'MMM dd'), 
+        rate: dayInt.length > 0 ? Math.round((dayDone.length / dayInt.length) * 100) : 0 
+      };
     });
   }, [intentions, logs]);
 

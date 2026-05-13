@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,11 +13,13 @@ import { Badge } from '@/components/ui/badge';
 import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function Modeler() {
   const { toast } = useToast();
+  const db = useFirestore();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [loading, setLoading] = useState(true);
@@ -35,9 +36,10 @@ export default function Modeler() {
   });
 
   const fetchIntentions = useCallback(async (date: string) => {
+    if (!db) return;
     setLoading(true);
     try {
-      const data = await getIntentionsByDate(date);
+      const data = await getIntentionsByDate(db, date);
       setIntentions(data);
     } catch (error) {
       toast({
@@ -48,14 +50,17 @@ export default function Modeler() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, db]);
 
   useEffect(() => {
     document.title = "GapLogic — Intention Modeler";
-    fetchIntentions(selectedDate);
-  }, [selectedDate, fetchIntentions]);
+    if (db) {
+      fetchIntentions(selectedDate);
+    }
+  }, [selectedDate, fetchIntentions, db]);
 
   const handleAdd = async () => {
+    if (!db) return;
     if (!formData.title || !formData.scheduledTime || !formData.date) {
       toast({
         variant: "destructive",
@@ -67,7 +72,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      addIntention({
+      addIntention(db, {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -86,13 +91,10 @@ export default function Modeler() {
         effortEstimate: 3,
       }));
 
+      // Optimitistic update would be better, but re-fetching ensures consistency
       setTimeout(() => fetchIntentions(selectedDate), 500);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: "Could not save your intention. Try again.",
-      });
+      // Errors are also handled by FirebaseErrorListener
     } finally {
       setSubmitting(false);
     }
