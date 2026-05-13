@@ -6,7 +6,7 @@ import { firebaseConfig } from './config';
 
 /**
  * Initializes Firebase services safely.
- * Returns dummy objects during SSR or if config is missing to prevent crashes.
+ * Returns dummy objects if config is missing to prevent crashes during early prototyping.
  */
 export function initializeFirebase(): {
   firebaseApp: FirebaseApp;
@@ -22,11 +22,11 @@ export function initializeFirebase(): {
     };
   }
 
-  // Check if config is at least partially present
-  const isConfigValid = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+  // Check if config is present
+  const isConfigValid = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== '';
 
   if (!isConfigValid) {
-    console.warn("Firebase configuration is missing or incomplete. Please link your project.");
+    console.warn("Firebase configuration is missing. Link a project in the sidebar to enable database features.");
     return { 
       firebaseApp: {} as FirebaseApp, 
       firestore: {} as Firestore, 

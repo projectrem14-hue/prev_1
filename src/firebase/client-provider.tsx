@@ -1,23 +1,21 @@
 
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { FirebaseProvider } from './provider';
-import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
-import { Auth } from 'firebase/auth';
+import { initializeFirebase } from './index';
 
 /**
- * Simplified provider that bypasses real initialization checks 
- * to allow the prototype to function without API keys.
+ * Ensures Firebase is initialized only once on the client and shared via context.
  */
 export const FirebaseClientProvider = ({ children }: { children: ReactNode }) => {
-  // Pass empty/dummy instances to satisfy hook requirements
+  const services = useMemo(() => initializeFirebase(), []);
+
   return (
     <FirebaseProvider 
-      firebaseApp={{} as FirebaseApp} 
-      firestore={{} as Firestore} 
-      auth={{} as Auth}
+      firebaseApp={services.firebaseApp} 
+      firestore={services.firestore} 
+      auth={services.auth}
     >
       {children}
     </FirebaseProvider>

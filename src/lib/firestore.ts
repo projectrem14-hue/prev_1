@@ -1,62 +1,109 @@
 
-/**
- * Mock Firestore Implementation using LocalStorage.
- * This ensures the app works without a real Firebase configuration.
- */
+'use client';
 
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy, 
+  serverTimestamp,
+  Firestore,
+  Timestamp
+} from 'firebase/firestore';
 import { Intention, RealityLog } from './schema';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
-const getStore = <T>(key: string): T[] => {
-  if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
-};
-
-const setStore = <T>(key: string, data: T[]) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(data));
-};
-
-export function addIntention(userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
-  const key = `gaplogic_intentions_${userId}`;
-  const store = getStore<Intention>(key);
-  const newItem: Intention = {
+export function addIntention(db: Firestore, userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
+  if (!db.type) return; // Skip if db is dummy
+  const colRef = collection(db, 'users', userId, 'intentions');
+  
+  const payload = {
     ...data,
-    id: Math.random().toString(36).substr(2, 9),
-    createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any
+    createdAt: serverTimestamp(),
   };
-  setStore(key, [...store, newItem]);
+
+  addDoc(colRef, payload).catch(async (error) => {
+    const permissionError = new FirestorePermissionError({
+      path: colRef.path,
+      operation: 'create',
+      requestResourceData: payload,
+    });
+    errorEmitter.emit('permission-error', permissionError);
+  });
 }
 
-export function addRealityLog(userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
-  const key = `gaplogic_logs_${userId}`;
-  const store = getStore<RealityLog>(key);
-  const newItem: RealityLog = {
+export function addRealityLog(db: Firestore, userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
+  if (!db.type) return;
+  const colRef = collection(db, 'users', userId, 'realityLogs');
+  
+  const payload = {
     ...data,
-    id: Math.random().toString(36).substr(2, 9),
-    createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any
+    createdAt: serverTimestamp(),
   };
-  setStore(key, [...store, newItem]);
+
+  addDoc(colRef, payload).catch(async (error) => {
+    const permissionError = new FirestorePermissionError({
+      path: colRef.path,
+      operation: 'create',
+      requestResourceData: payload,
+    });
+    errorEmitter.emit('permission-error', permissionError);
+  });
 }
 
-export async function getIntentionsByDate(db: any, userId: string, date: string): Promise<Intention[]> {
-  const store = getStore<Intention>(`gaplogic_intentions_${userId}`);
-  return store
-    .filter(i => i.date === date)
-    .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+export async function getIntentionsByDate(db: Firestore, userId: string, date: string): Promise<Intention[]> {
+  if (!db.type) return [];
+  const colRef = collection(db, 'users', userId, 'intentions');
+  const q = query(colRef, where('date', '==', date), orderBy('scheduledTime', 'asc'));
+  
+  try {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Intention));
+  } catch (error) {
+    return [];
+  }
 }
 
-export async function getRealityLogsByDate(db: any, userId: string, date: string): Promise<RealityLog[]> {
-  const store = getStore<RealityLog>(`gaplogic_logs_${userId}`);
-  return store.filter(l => l.date === date);
+export async function getRealityLogsByDate(db: Firestore, userId: string, date: string): Promise<RealityLog[]> {
+  if (!db.type) return [];
+  const colRef = collection(db, 'users', userId, 'realityLogs');
+  const q = query(colRef, where('date', '==', date));
+  
+  try {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RealityLog));
+  } catch (error) {
+    return [];
+  }
 }
 
-export async function getAllIntentions(db: any, userId: string): Promise<Intention[]> {
-  const store = getStore<Intention>(`gaplogic_intentions_${userId}`);
-  return store.sort((a, b) => b.date.localeCompare(a.date) || a.scheduledTime.localeCompare(b.scheduledTime));
+export async function getAllIntentions(db: Firestore, userId: string): Promise<Intention[]> {
+  if (!db.type) return [];
+  const colRef = collection(db, 'users', userId, 'intentions');
+  const q = query(colRef, orderBy('date', 'desc'), orderBy('scheduledTime', 'asc'));
+  
+  try {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Intention));
+  } catch (error) {
+    return [];
+  }
 }
 
-export async function getAllRealityLogs(db: any, userId: string): Promise<RealityLog[]> {
-  const store = getStore<RealityLog>(`gaplogic_logs_${userId}`);
-  return store.sort((a, b) => b.date.localeCompare(a.date));
+export async function getAllRealityLogs(db: Firestore, userId: string): Promise<RealityLog[]> {
+  if (!db.type) return [];
+  const colRef = collection(db, 'users', userId, 'realityLogs');
+  const q = query(colRef, orderBy('date', 'desc'));
+  
+  try {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RealityLog));
+  } catch (error) {
+    return [];
+  }
 }

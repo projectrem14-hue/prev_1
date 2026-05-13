@@ -17,12 +17,14 @@ import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/AuthContext';
+import { useFirestore } from '@/firebase';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function Modeler() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const db = useFirestore();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [loading, setLoading] = useState(true);
@@ -39,27 +41,27 @@ export default function Modeler() {
   });
 
   const fetchIntentions = useCallback(async (date: string) => {
-    if (!user) return;
+    if (!user || !db) return;
     setLoading(true);
     try {
-      const data = await getIntentionsByDate(null, user.uid, date);
+      const data = await getIntentionsByDate(db, user.uid, date);
       setIntentions(data);
     } catch (error) {
       toast({ variant: "destructive", title: "Load Error", description: "Failed to load intentions." });
     } finally {
       setLoading(false);
     }
-  }, [toast, user]);
+  }, [toast, user, db]);
 
   useEffect(() => {
     document.title = "GapLogic — Intention Modeler";
-    if (user) {
+    if (user && db) {
       fetchIntentions(selectedDate);
     }
-  }, [selectedDate, fetchIntentions, user]);
+  }, [selectedDate, fetchIntentions, user, db]);
 
   const handleAdd = async () => {
-    if (!user) return;
+    if (!user || !db) return;
     if (!formData.title) {
       toast({ variant: "destructive", title: "Missing Information", description: "Please enter a title." });
       return;
@@ -67,7 +69,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      await addIntention(user.uid, {
+      await addIntention(db, user.uid, {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -77,6 +79,7 @@ export default function Modeler() {
 
       toast({ title: "Intention locked in.", description: `"${formData.title}" added.` });
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3 }));
+      // Optimistic refresh
       fetchIntentions(selectedDate);
     } catch (error) {
       toast({ variant: "destructive", title: "Add Error", description: "Failed to save intention." });
@@ -158,7 +161,12 @@ export default function Modeler() {
 
             <div className="lg:col-span-2 space-y-6">
               <h2 className="font-headline text-2xl font-bold flex items-center gap-3">Your Stack <Badge className="bg-primary/20 text-primary border-none">{intentions.length}</Badge></h2>
-              {loading ? <Skeleton className="h-44 w-full rounded-2xl" /> : intentions.length === 0 ? (
+              {loading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+              ) : intentions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-3xl bg-card/10 text-center">
                   <TargetIcon className="w-12 h-12 text-muted-foreground/30 mb-4" />
                   <p className="text-muted-foreground">Nothing planned for this date yet.</p>
