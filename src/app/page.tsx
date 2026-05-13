@@ -1,44 +1,165 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { 
   BarChart, 
   Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   Cell,
   PieChart,
   Pie
 } from 'recharts';
-import { ArrowUpRight, TrendingDown, Target, Zap, AlertCircle } from 'lucide-react';
-
-const mockGapData = [
-  { name: 'Mon', planned: 5, actual: 4 },
-  { name: 'Tue', planned: 6, actual: 2 },
-  { name: 'Wed', planned: 4, actual: 4 },
-  { name: 'Thu', planned: 7, actual: 3 },
-  { name: 'Fri', planned: 5, actual: 5 },
-  { name: 'Sat', planned: 3, actual: 1 },
-  { name: 'Sun', planned: 2, actual: 0 },
-];
-
-const mockCategoryData = [
-  { name: 'Work', value: 45 },
-  { name: 'Health', value: 25 },
-  { name: 'Personal', value: 20 },
-  { name: 'Chores', value: 10 },
-];
-
-const COLORS = ['#B794F4', '#638BFF', '#9F7AEA', '#4C51BF'];
+import { ArrowUpRight, TrendingDown, Target, Zap, AlertCircle, PlusCircle } from 'lucide-react';
+import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
+import { Intention, RealityLog } from '@/lib/schema';
+import Link from 'next/link';
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [intentions, setIntentions] = useState<Intention[]>([]);
+  const [logs, setLogs] = useState<RealityLog[]>([]);
+  const [metrics, setMetrics] = useState({
+    intentionRate: 0,
+    streak: 0,
+    topFrictionCategory: 'None',
+    criticalDeviations: 0,
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [allIntentions, allLogs] = await Promise.all([
+          getAllIntentions(),
+          getAllRealityLogs()
+        ]);
+
+        setIntentions(allIntentions);
+        setLogs(allLogs);
+
+        if (allIntentions.length > 0) {
+          // 1. Intention Rate
+          const completedLogs = allLogs.filter(l => l.completed).length;
+          const rate = Math.round((completedLogs / allIntentions.length) * 100);
+
+          // 2. Critical Deviations (Intentions with no log at all)
+          const loggedIntentionIds = new Set(allLogs.map(l => l.intentionId));
+          const deviations = allIntentions.filter(i => !loggedIntentionIds.has(i.id)).length;
+
+          // 3. Top Friction Category (Categories of incomplete tasks)
+          const incompleteCategories: Record<string, number> = {};
+          allIntentions.forEach(i => {
+            const log = allLogs.find(l => l.intentionId === i.id);
+            if (!log || !log.completed) {
+              incompleteCategories[i.category] = (incompleteCategories[i.category] || 0) + 1;
+            }
+          });
+          const topFriction = Object.entries(incompleteCategories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+
+          // 4. Streak Calculation
+          const logsByDate: Record<string, RealityLog[]> = {};
+          allLogs.forEach(l => {
+            if (!logsByDate[l.date]) logsByDate[l.date] = [];
+            logsByDate[l.date].push(l);
+          });
+
+          const intentionsByDate: Record<string, Intention[]> = {};
+          allIntentions.forEach(i => {
+            if (!intentionsByDate[i.date]) intentionsByDate[i.date] = [];
+            intentionsByDate[i.date].push(i);
+          });
+
+          const uniqueDates = Array.from(new Set([...Object.keys(logsByDate), ...Object.keys(intentionsByDate)])).sort((a, b) => b.localeCompare(a));
+          
+          let currentStreak = 0;
+          for (const date of uniqueDates) {
+            const dayIntentions = intentionsByDate[date] || [];
+            const dayLogs = logsByDate[date] || [];
+            if (dayIntentions.length === 0) continue;
+            
+            const dayCompleted = dayLogs.filter(l => l.completed).length;
+            const dayRate = (dayCompleted / dayIntentions.length) * 100;
+            
+            if (dayRate >= 50) {
+              currentStreak++;
+            } else {
+              break;
+            }
+          }
+
+          setMetrics({
+            intentionRate: rate,
+            streak: currentStreak,
+            topFrictionCategory: topFriction,
+            criticalDeviations: deviations,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex">
+        <Navigation />
+        <main className="flex-1 ml-64 p-8 lg:p-12">
+          <div className="space-y-4 mb-10">
+            <Skeleton className="h-12 w-[300px]" />
+            <Skeleton className="h-6 w-[400px]" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+          <Skeleton className="h-[400px] w-full" />
+        </main>
+      </div>
+    );
+  }
+
+  if (intentions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex">
+        <Navigation />
+        <main className="flex-1 ml-64 p-8 lg:p-12 flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+            <Target className="w-10 h-10 text-primary" />
+          </div>
+          <h2 className="text-3xl font-headline font-bold mb-2">No data yet</h2>
+          <p className="text-muted-foreground mb-8 max-w-md">
+            Start by adding intentions in the Modeler to see your behavioral diagnostics come to life.
+          </p>
+          <Link href="/modeler">
+            <Button size="lg" className="rounded-2xl gap-2 font-bold px-8">
+              <PlusCircle className="w-5 h-5" />
+              Go to Modeler
+            </Button>
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
+  // Get last 5 intentions for Recent Activity
+  const recentIntentions = [...intentions].slice(0, 5);
+
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
@@ -51,12 +172,12 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-3">
             <Badge variant="outline" className="px-4 py-1.5 rounded-full border-border/40 bg-card/30">
-              Week Ending Oct 24
+              Live Feed
             </Badge>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <Card className="glass-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -65,12 +186,9 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-headline">68%</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <TrendingDown className="w-3 h-3 text-destructive" />
-                -12% from last week
-              </p>
-              <Progress value={68} className="h-1.5 mt-4" />
+              <div className="text-3xl font-bold font-headline">{metrics.intentionRate}%</div>
+              <Progress value={metrics.intentionRate} className="h-1.5 mt-4" />
+              <p className="text-xs text-muted-foreground mt-2">Overall completion compliance</p>
             </CardContent>
           </Card>
           
@@ -78,20 +196,32 @@ export default function Dashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Zap className="w-4 h-4 text-accent" />
-                Friction Leaks
+                Current Streak
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-headline">4.2h</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <ArrowUpRight className="w-3 h-3 text-primary" />
-                Lost to distractions daily
-              </p>
+              <div className="text-3xl font-bold font-headline">{metrics.streak} Days</div>
               <div className="flex gap-1 mt-4">
                 {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                  <div key={i} className={`h-1.5 flex-1 rounded-full ${i < 5 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= (metrics.streak % 8) ? 'bg-accent' : 'bg-muted'}`} />
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-2">Days with &gt;50% compliance</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-secondary" />
+                Top Friction
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold font-headline capitalize">{metrics.topFrictionCategory}</div>
+              <Badge variant="secondary" className="mt-4 bg-secondary/10 text-secondary border-none">
+                Primary Leak Point
+              </Badge>
             </CardContent>
           </Card>
 
@@ -103,104 +233,59 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-headline">3</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                Focus priorities ignored
-              </p>
-              <div className="flex items-center gap-2 mt-4">
-                <Badge variant="destructive" className="rounded-full h-2 w-2 p-0" />
-                <Badge variant="destructive" className="rounded-full h-2 w-2 p-0" />
-                <Badge variant="destructive" className="rounded-full h-2 w-2 p-0" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-          <Card className="glass-card border-none">
-            <CardHeader>
-              <CardTitle className="font-headline">Intention vs Reality</CardTitle>
-              <CardDescription>Daily comparison of planned tasks vs actual completions.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockGapData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))' }}
-                    cursor={{fill: 'hsl(var(--muted)/0.2)'}}
-                  />
-                  <Bar dataKey="planned" fill="hsl(var(--primary)/0.4)" radius={[4, 4, 0, 0]} name="Planned" />
-                  <Bar dataKey="actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Actual" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-none">
-            <CardHeader>
-              <CardTitle className="font-headline">Friction Distribution</CardTitle>
-              <CardDescription>Where your intentions are failing most frequently.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[350px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={mockCategoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {mockCategoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Primary Leak</span>
-                <span className="text-xl font-bold font-headline">Work</span>
-              </div>
+              <div className="text-3xl font-bold font-headline">{metrics.criticalDeviations}</div>
+              <p className="text-xs text-muted-foreground mt-4">Intentions completely ignored</p>
             </CardContent>
           </Card>
         </div>
 
         <section className="pb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-headline text-2xl font-bold">Recent Discrepancies</h2>
-            <Badge className="bg-primary/20 text-primary border-none hover:bg-primary/30 cursor-pointer">View Audit History</Badge>
+            <h2 className="font-headline text-2xl font-bold">Recent Activity</h2>
+            <Link href="/sync">
+              <Badge className="bg-primary/20 text-primary border-none hover:bg-primary/30 cursor-pointer">Sync Reality Logs</Badge>
+            </Link>
           </div>
           <div className="grid grid-cols-1 gap-4">
-            {[
-              { id: 1, task: "Deep work session (2hrs)", status: "Deviated", reason: "Context switching", time: "2h ago" },
-              { id: 2, task: "Morning run", status: "Not Started", reason: "Sleep deprivation", time: "8h ago" },
-              { id: 3, task: "Client proposal review", status: "Partially", reason: "Urgent meeting overlap", time: "Yesterday" },
-            ].map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-5 rounded-2xl bg-card/40 border border-border/40 hover:bg-card/60 transition-colors group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Target className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+            {recentIntentions.map((item) => {
+              const log = logs.find(l => l.intentionId === item.id);
+              let statusText = "No Log Yet";
+              let statusColor = "bg-muted-foreground/20 text-muted-foreground";
+              let dotColor = "bg-muted-foreground/40";
+
+              if (log) {
+                if (log.completed) {
+                  statusText = "Completed";
+                  statusColor = "bg-primary/20 text-primary";
+                  dotColor = "bg-primary";
+                } else {
+                  statusText = "Missed";
+                  statusColor = "bg-destructive/20 text-destructive";
+                  dotColor = "bg-destructive";
+                }
+              }
+
+              return (
+                <div key={item.id} className="flex items-center justify-between p-5 rounded-2xl bg-card/40 border border-border/40 hover:bg-card/60 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Target className={`w-5 h-5 ${log?.completed ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span className={`w-1 h-1 rounded-full ${dotColor}`} />
+                        {item.category} • Scheduled: {item.scheduledTime}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">{item.task}</h4>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                      {item.reason}
-                    </p>
+                  <div className="text-right">
+                    <Badge variant="outline" className={`mb-1 border-none ${statusColor}`}>{statusText}</Badge>
+                    <p className="text-xs text-muted-foreground">{item.date}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge variant="outline" className="mb-1 bg-background/50">{item.status}</Badge>
-                  <p className="text-xs text-muted-foreground">{item.time}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>
