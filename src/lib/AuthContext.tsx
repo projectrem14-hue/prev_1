@@ -23,11 +23,11 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Initialize state synchronously from localStorage to avoid flashes on page switch
   const [user, setUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for existing session
     const savedUser = localStorage.getItem('gaplogic_session');
     if (savedUser) {
       setUser(JSON.parse(savedUser));

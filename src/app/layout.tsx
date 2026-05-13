@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/lib/AuthContext';
+import { DataProvider } from '@/lib/DataContext';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
@@ -26,9 +27,11 @@ export default function RootLayout({
       <body className="font-body selection:bg-primary/30 selection:text-primary bg-background antialiased min-h-screen overflow-y-auto">
         <FirebaseClientProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
-            <FirebaseErrorListener />
+            <DataProvider>
+              {children}
+              <Toaster />
+              <FirebaseErrorListener />
+            </DataProvider>
           </AuthProvider>
         </FirebaseClientProvider>
       </body>

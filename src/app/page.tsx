@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Navigation } from '@/components/navigation';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { useAuth } from '@/lib/AuthContext';
+import { useData } from '@/lib/DataContext';
 import { 
   Target, 
   Zap, 
@@ -20,87 +18,53 @@ import {
   PlusCircle,
   RefreshCw
 } from 'lucide-react';
-import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
-import { Intention, RealityLog } from '@/lib/schema';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const db = useFirestore();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [intentions, setIntentions] = useState<Intention[]>([]);
-  const [logs, setLogs] = useState<RealityLog[]>([]);
-  const [metrics, setMetrics] = useState({
-    intentionRate: 0,
-    streak: 0,
-    topFrictionCategory: 'None',
-    criticalDeviations: 0,
-  });
+  const { intentions, logs, loading } = useData();
 
   useEffect(() => {
     document.title = "GapLogic — Dashboard";
-    async function fetchData() {
-      if (!db || !user) return;
-      try {
-        const [allIntentions, allLogs] = await Promise.all([
-          getAllIntentions(db, user.uid),
-          getAllRealityLogs(db, user.uid)
-        ]);
+  }, []);
 
-        setIntentions(allIntentions);
-        setLogs(allLogs);
+  const metrics = useMemo(() => {
+    if (intentions.length === 0) return null;
 
-        if (allIntentions.length > 0) {
-          const completedLogs = allLogs.filter(l => l.completed).length;
-          const rate = Math.round((completedLogs / allIntentions.length) * 100);
+    const completedLogs = logs.filter(l => l.completed).length;
+    const rate = Math.round((completedLogs / intentions.length) * 100);
 
-          const loggedIntentionIds = new Set(allLogs.map(l => l.intentionId));
-          const deviations = allIntentions.filter(i => !loggedIntentionIds.has(i.id)).length;
+    const loggedIntentionIds = new Set(logs.map(l => l.intentionId));
+    const deviations = intentions.filter(i => !loggedIntentionIds.has(i.id)).length;
 
-          const incompleteCategories: Record<string, number> = {};
-          allIntentions.forEach(i => {
-            const log = allLogs.find(l => l.intentionId === i.id);
-            if (!log || !log.completed) {
-              incompleteCategories[i.category] = (incompleteCategories[i.category] || 0) + 1;
-            }
-          });
-          const topFriction = Object.entries(incompleteCategories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+    const incompleteCategories: Record<string, number> = {};
+    intentions.forEach(i => {
+      const log = logs.find(l => l.intentionId === i.id);
+      if (!log || !log.completed) {
+        incompleteCategories[i.category] = (incompleteCategories[i.category] || 0) + 1;
+      }
+    });
+    const topFriction = Object.entries(incompleteCategories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
-          // Simple streak calculation (consecutive days with at least one completed intention)
-          const dates = Array.from(new Set(allIntentions.map(i => i.date))).sort((a, b) => b.localeCompare(a));
-          let currentStreak = 0;
-          for (const date of dates) {
-            const dayIntentions = allIntentions.filter(i => i.date === date);
-            const dayLogs = allLogs.filter(l => l.date === date && l.completed);
-            if (dayIntentions.length > 0 && dayLogs.length > 0) {
-              currentStreak++;
-            } else {
-              break;
-            }
-          }
-
-          setMetrics({
-            intentionRate: rate,
-            streak: currentStreak,
-            topFrictionCategory: topFriction,
-            criticalDeviations: deviations,
-          });
-        }
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Data Load Error",
-          description: "Failed to load dashboard data. Check your connection.",
-        });
-      } finally {
-        setLoading(false);
+    const dates = Array.from(new Set(intentions.map(i => i.date))).sort((a, b) => b.localeCompare(a));
+    let currentStreak = 0;
+    for (const date of dates) {
+      const dayIntentions = intentions.filter(i => i.date === date);
+      const dayLogs = logs.filter(l => l.date === date && l.completed);
+      if (dayIntentions.length > 0 && dayLogs.length > 0) {
+        currentStreak++;
+      } else {
+        break;
       }
     }
 
-    fetchData();
-  }, [toast, db, user]);
+    return {
+      intentionRate: rate,
+      streak: currentStreak,
+      topFrictionCategory: topFriction,
+      criticalDeviations: deviations,
+    };
+  }, [intentions, logs]);
 
   if (loading) {
     return (
@@ -166,8 +130,8 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics.intentionRate}%</div>
-                    <Progress value={metrics.intentionRate} className="h-1.5 mt-4" />
+                    <div className="text-3xl font-bold font-headline">{metrics?.intentionRate}%</div>
+                    <Progress value={metrics?.intentionRate} className="h-1.5 mt-4" />
                   </CardContent>
                 </Card>
                 
@@ -179,10 +143,10 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics.streak} Days</div>
+                    <div className="text-3xl font-bold font-headline">{metrics?.streak} Days</div>
                     <div className="flex gap-1 mt-4">
                       {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                        <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= (metrics.streak % 8) ? "bg-accent" : "bg-muted")} />
+                        <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= ((metrics?.streak || 0) % 8) ? "bg-accent" : "bg-muted")} />
                       ))}
                     </div>
                   </CardContent>
@@ -196,7 +160,7 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline capitalize truncate">{metrics.topFrictionCategory}</div>
+                    <div className="text-3xl font-bold font-headline capitalize truncate">{metrics?.topFrictionCategory}</div>
                     <Badge variant="secondary" className="mt-4 bg-secondary/10 text-secondary border-none">Primary Leak Point</Badge>
                   </CardContent>
                 </Card>
@@ -209,7 +173,7 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold font-headline">{metrics.criticalDeviations}</div>
+                    <div className="text-3xl font-bold font-headline">{metrics?.criticalDeviations}</div>
                     <p className="text-xs text-muted-foreground mt-4">Intentions never logged</p>
                   </CardContent>
                 </Card>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Navigation } from '@/components/navigation';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -13,8 +13,8 @@ import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pencil, Plus, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { addIntention, getIntentionsByDate } from '@/lib/firestore';
-import { Intention } from '@/lib/schema';
+import { addIntention } from '@/lib/firestore';
+import { useData } from '@/lib/DataContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { useFirestore } from '@/firebase';
@@ -25,11 +25,10 @@ export default function Modeler() {
   const { toast } = useToast();
   const { user } = useAuth();
   const db = useFirestore();
+  const { intentions, loading, refresh } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [intentions, setIntentions] = useState<Intention[]>([]);
   const [selectedDate, setSelectedDate] = useState(today);
   
   const [formData, setFormData] = useState({
@@ -40,25 +39,13 @@ export default function Modeler() {
     date: today,
   });
 
-  const fetchIntentions = useCallback(async (date: string) => {
-    if (!user || !db) return;
-    setLoading(true);
-    try {
-      const data = await getIntentionsByDate(db, user.uid, date);
-      setIntentions(data);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Load Error", description: "Failed to load intentions." });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast, user, db]);
-
   useEffect(() => {
     document.title = "GapLogic — Intention Modeler";
-    if (user && db) {
-      fetchIntentions(selectedDate);
-    }
-  }, [selectedDate, fetchIntentions, user, db]);
+  }, []);
+
+  const filteredIntentions = useMemo(() => {
+    return intentions.filter(i => i.date === selectedDate);
+  }, [intentions, selectedDate]);
 
   const handleAdd = async () => {
     if (!user || !db) return;
@@ -79,8 +66,7 @@ export default function Modeler() {
 
       toast({ title: "Intention locked in.", description: `"${formData.title}" added.` });
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3 }));
-      // Optimistic refresh
-      fetchIntentions(selectedDate);
+      await refresh();
     } catch (error) {
       toast({ variant: "destructive", title: "Add Error", description: "Failed to save intention." });
     } finally {
@@ -160,20 +146,20 @@ export default function Modeler() {
             </Card>
 
             <div className="lg:col-span-2 space-y-6">
-              <h2 className="font-headline text-2xl font-bold flex items-center gap-3">Your Stack <Badge className="bg-primary/20 text-primary border-none">{intentions.length}</Badge></h2>
+              <h2 className="font-headline text-2xl font-bold flex items-center gap-3">Your Stack <Badge className="bg-primary/20 text-primary border-none">{filteredIntentions.length}</Badge></h2>
               {loading ? (
                 <div className="space-y-4">
                   <Skeleton className="h-24 w-full rounded-2xl" />
                   <Skeleton className="h-24 w-full rounded-2xl" />
                 </div>
-              ) : intentions.length === 0 ? (
+              ) : filteredIntentions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-3xl bg-card/10 text-center">
                   <TargetIcon className="w-12 h-12 text-muted-foreground/30 mb-4" />
                   <p className="text-muted-foreground">Nothing planned for this date yet.</p>
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {intentions.map(item => (
+                  {filteredIntentions.map(item => (
                     <Card key={item.id} className="bg-card/30 border-none glass-card">
                       <div className="p-6 flex items-center gap-6">
                         <div className="text-center min-w-[50px]"><div className="text-[10px] font-bold text-muted-foreground uppercase">Effort</div><div className="text-2xl font-bold font-headline text-primary">{item.effortEstimate}</div></div>
