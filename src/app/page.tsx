@@ -8,24 +8,21 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer, 
-  Cell,
-  PieChart,
-  Pie
-} from 'recharts';
-import { ArrowUpRight, TrendingDown, Target, Zap, AlertCircle, PlusCircle } from 'lucide-react';
+  Target, 
+  Zap, 
+  TrendingDown, 
+  AlertCircle, 
+  PlusCircle,
+  RefreshCw
+} from 'lucide-react';
 import { getAllIntentions, getAllRealityLogs } from '@/lib/firestore';
 import { Intention, RealityLog } from '@/lib/schema';
 import Link from 'next/link';
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
@@ -37,6 +34,7 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    document.title = "GapLogic — Dashboard";
     async function fetchData() {
       try {
         const [allIntentions, allLogs] = await Promise.all([
@@ -48,15 +46,12 @@ export default function Dashboard() {
         setLogs(allLogs);
 
         if (allIntentions.length > 0) {
-          // 1. Intention Rate
           const completedLogs = allLogs.filter(l => l.completed).length;
           const rate = Math.round((completedLogs / allIntentions.length) * 100);
 
-          // 2. Critical Deviations (Intentions with no log at all)
           const loggedIntentionIds = new Set(allLogs.map(l => l.intentionId));
           const deviations = allIntentions.filter(i => !loggedIntentionIds.has(i.id)).length;
 
-          // 3. Top Friction Category (Categories of incomplete tasks)
           const incompleteCategories: Record<string, number> = {};
           allIntentions.forEach(i => {
             const log = allLogs.find(l => l.intentionId === i.id);
@@ -66,31 +61,13 @@ export default function Dashboard() {
           });
           const topFriction = Object.entries(incompleteCategories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
-          // 4. Streak Calculation
-          const logsByDate: Record<string, RealityLog[]> = {};
-          allLogs.forEach(l => {
-            if (!logsByDate[l.date]) logsByDate[l.date] = [];
-            logsByDate[l.date].push(l);
-          });
-
-          const intentionsByDate: Record<string, Intention[]> = {};
-          allIntentions.forEach(i => {
-            if (!intentionsByDate[i.date]) intentionsByDate[i.date] = [];
-            intentionsByDate[i.date].push(i);
-          });
-
-          const uniqueDates = Array.from(new Set([...Object.keys(logsByDate), ...Object.keys(intentionsByDate)])).sort((a, b) => b.localeCompare(a));
-          
+          // Streak logic
+          const dates = Array.from(new Set(allIntentions.map(i => i.date))).sort((a, b) => b.localeCompare(a));
           let currentStreak = 0;
-          for (const date of uniqueDates) {
-            const dayIntentions = intentionsByDate[date] || [];
-            const dayLogs = logsByDate[date] || [];
-            if (dayIntentions.length === 0) continue;
-            
-            const dayCompleted = dayLogs.filter(l => l.completed).length;
-            const dayRate = (dayCompleted / dayIntentions.length) * 100;
-            
-            if (dayRate >= 50) {
+          for (const date of dates) {
+            const dayIntentions = allIntentions.filter(i => i.date === date);
+            const dayLogs = allLogs.filter(l => l.date === date && l.completed);
+            if (dayIntentions.length > 0 && (dayLogs.length / dayIntentions.length) >= 0.5) {
               currentStreak++;
             } else {
               break;
@@ -105,30 +82,32 @@ export default function Dashboard() {
           });
         }
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        toast({
+          variant: "destructive",
+          title: "Data Load Error",
+          description: "Failed to load dashboard data. Check your connection.",
+        });
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
-  }, []);
+  }, [toast]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex">
         <Navigation />
-        <main className="flex-1 ml-64 p-8 lg:p-12">
+        <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
           <div className="space-y-4 mb-10">
             <Skeleton className="h-12 w-[300px]" />
             <Skeleton className="h-6 w-[400px]" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full rounded-3xl" />
         </main>
       </div>
     );
@@ -138,16 +117,16 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-background text-foreground flex">
         <Navigation />
-        <main className="flex-1 ml-64 p-8 lg:p-12 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-            <Target className="w-10 h-10 text-primary" />
+        <main className="flex-1 md:ml-64 p-6 lg:p-12 flex flex-col items-center justify-center text-center pb-24 md:pb-12">
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+            <Target className="w-12 h-12 text-primary" />
           </div>
-          <h2 className="text-3xl font-headline font-bold mb-2">No data yet</h2>
+          <h2 className="text-3xl font-headline font-bold mb-3">No data yet</h2>
           <p className="text-muted-foreground mb-8 max-w-md">
             Start by adding intentions in the Modeler to see your behavioral diagnostics come to life.
           </p>
           <Link href="/modeler">
-            <Button size="lg" className="rounded-2xl gap-2 font-bold px-8">
+            <Button size="lg" className="rounded-2xl gap-2 font-bold px-10 h-14 bg-primary text-primary-foreground shadow-xl shadow-primary/20">
               <PlusCircle className="w-5 h-5" />
               Go to Modeler
             </Button>
@@ -157,30 +136,28 @@ export default function Dashboard() {
     );
   }
 
-  // Get last 5 intentions for Recent Activity
   const recentIntentions = [...intentions].slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12">
-        <header className="mb-10 flex justify-between items-end">
+      <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
+        <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Cognitive Dashboard</h1>
             <p className="text-muted-foreground text-lg">Visualizing the gap between your intentions and reality.</p>
           </div>
-          <div className="flex gap-3">
-            <Badge variant="outline" className="px-4 py-1.5 rounded-full border-border/40 bg-card/30">
-              Live Feed
-            </Badge>
-          </div>
+          <Badge variant="outline" className="px-4 py-1.5 rounded-full border-border/40 bg-card/30 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Live Analytics
+          </Badge>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
                 Intention Rate
               </CardTitle>
@@ -188,13 +165,12 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-3xl font-bold font-headline">{metrics.intentionRate}%</div>
               <Progress value={metrics.intentionRate} className="h-1.5 mt-4" />
-              <p className="text-xs text-muted-foreground mt-2">Overall completion compliance</p>
             </CardContent>
           </Card>
           
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Zap className="w-4 h-4 text-accent" />
                 Current Streak
               </CardTitle>
@@ -203,85 +179,74 @@ export default function Dashboard() {
               <div className="text-3xl font-bold font-headline">{metrics.streak} Days</div>
               <div className="flex gap-1 mt-4">
                 {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                  <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= (metrics.streak % 8) ? 'bg-accent' : 'bg-muted'}`} />
+                  <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= (metrics.streak % 8) ? "bg-accent" : "bg-muted")} />
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Days with &gt;50% compliance</p>
             </CardContent>
           </Card>
 
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <TrendingDown className="w-4 h-4 text-secondary" />
                 Top Friction
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-headline capitalize">{metrics.topFrictionCategory}</div>
-              <Badge variant="secondary" className="mt-4 bg-secondary/10 text-secondary border-none">
-                Primary Leak Point
-              </Badge>
+              <div className="text-3xl font-bold font-headline capitalize truncate">{metrics.topFrictionCategory}</div>
+              <Badge variant="secondary" className="mt-4 bg-secondary/10 text-secondary border-none">Primary Leak Point</Badge>
             </CardContent>
           </Card>
 
           <Card className="glass-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-destructive" />
-                Critical Deviations
+                Deviations
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-headline">{metrics.criticalDeviations}</div>
-              <p className="text-xs text-muted-foreground mt-4">Intentions completely ignored</p>
+              <p className="text-xs text-muted-foreground mt-4">Intentions never logged</p>
             </CardContent>
           </Card>
         </div>
 
-        <section className="pb-12">
+        <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-headline text-2xl font-bold">Recent Activity</h2>
             <Link href="/sync">
-              <Badge className="bg-primary/20 text-primary border-none hover:bg-primary/30 cursor-pointer">Sync Reality Logs</Badge>
+              <Button variant="ghost" className="text-primary hover:bg-primary/10 gap-2 font-bold">
+                <RefreshCw className="w-4 h-4" />
+                Sync Reality
+              </Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-4">
             {recentIntentions.map((item) => {
               const log = logs.find(l => l.intentionId === item.id);
-              let statusText = "No Log Yet";
-              let statusColor = "bg-muted-foreground/20 text-muted-foreground";
-              let dotColor = "bg-muted-foreground/40";
-
-              if (log) {
-                if (log.completed) {
-                  statusText = "Completed";
-                  statusColor = "bg-primary/20 text-primary";
-                  dotColor = "bg-primary";
-                } else {
-                  statusText = "Missed";
-                  statusColor = "bg-destructive/20 text-destructive";
-                  dotColor = "bg-destructive";
-                }
-              }
-
               return (
-                <div key={item.id} className="flex items-center justify-between p-5 rounded-2xl bg-card/40 border border-border/40 hover:bg-card/60 transition-colors group">
+                <div key={item.id} className="flex items-center justify-between p-5 rounded-2xl bg-card/40 border border-border/40 hover:bg-card/60 transition-all group glass-card border-none">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Target className={`w-5 h-5 ${log?.completed ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Target className={cn("w-6 h-6", log?.completed ? "text-primary" : "text-muted-foreground")} />
                     </div>
                     <div>
-                      <h4 className="font-medium text-foreground">{item.title}</h4>
+                      <h4 className="font-headline font-semibold text-lg">{item.title}</h4>
                       <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <span className={`w-1 h-1 rounded-full ${dotColor}`} />
-                        {item.category} • Scheduled: {item.scheduledTime}
+                        <span className={cn("w-1.5 h-1.5 rounded-full", log ? (log.completed ? "bg-primary" : "bg-destructive") : "bg-muted-foreground/40")} />
+                        {item.category} • {item.scheduledTime}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant="outline" className={`mb-1 border-none ${statusColor}`}>{statusText}</Badge>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <Badge variant="outline" className={cn(
+                      "border-none px-3 py-1",
+                      log ? (log.completed ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive") : "bg-muted/30 text-muted-foreground"
+                    )}>
+                      {log ? (log.completed ? "Completed" : "Missed") : "No Log"}
+                    </Badge>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{item.date}</span>
                   </div>
                 </div>
               );

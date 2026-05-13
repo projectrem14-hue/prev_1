@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Target, Clock, Plus, Trash2, Calendar as CalendarIcon, Loader2, CheckCircle2 } from 'lucide-react';
+import { Pencil, Plus, Target, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
@@ -40,13 +40,18 @@ export default function Modeler() {
       const data = await getIntentionsByDate(date);
       setIntentions(data);
     } catch (error) {
-      console.error("Error fetching intentions:", error);
+      toast({
+        variant: "destructive",
+        title: "Load Error",
+        description: "Failed to load intentions. Check your connection.",
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
+    document.title = "GapLogic — Intention Modeler";
     fetchIntentions(selectedDate);
   }, [selectedDate, fetchIntentions]);
 
@@ -54,8 +59,8 @@ export default function Modeler() {
     if (!formData.title || !formData.scheduledTime || !formData.date) {
       toast({
         variant: "destructive",
-        title: "Validation Error",
-        description: "Please fill out all fields before locking in your intention.",
+        title: "Missing Information",
+        description: "Please define your intention title and schedule before locking in.",
       });
       return;
     }
@@ -72,36 +77,29 @@ export default function Modeler() {
 
       toast({
         title: "Intention locked in.",
-        description: `"${formData.title}" has been added to your stack.`,
+        description: `"${formData.title}" added to your behavioral stack.`,
       });
 
-      // Reset form (except date)
       setFormData(prev => ({
         ...prev,
         title: '',
         effortEstimate: 3,
-        scheduledTime: format(new Date(), 'HH:mm'),
       }));
 
-      // Refresh if the added intention is for the currently viewed date
-      if (formData.date === selectedDate) {
-        fetchIntentions(selectedDate);
-      } else {
-        setSelectedDate(formData.date);
-      }
+      setTimeout(() => fetchIntentions(selectedDate), 500);
     } catch (error) {
-      console.error("Error saving intention:", error);
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: "Could not save your intention. Try again.",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   const effortLabels: Record<number, string> = {
-    1: 'Minimal',
-    2: 'Low',
-    3: 'Moderate',
-    4: 'High',
-    5: 'Intense'
+    1: 'Minimal', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Intense'
   };
 
   const categoryColors: Record<string, string> = {
@@ -115,14 +113,14 @@ export default function Modeler() {
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12">
+      <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
         <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Intention Modeler</h1>
             <p className="text-muted-foreground text-lg">Define your goals with precision. Clarity is the first step to consistency.</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="view-date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Viewing Date</Label>
+          <div className="flex flex-col gap-2 min-w-[200px]">
+            <Label htmlFor="view-date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Planning Date</Label>
             <Input 
               id="view-date"
               type="date"
@@ -133,38 +131,32 @@ export default function Modeler() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
-          {/* Input Form Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <Card className="glass-card sticky top-8 border-none">
+            <Card className="glass-card border-none sticky top-8">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  Define Intention
+                  <Pencil className="w-5 h-5 text-primary" />
+                  Draft Intention
                 </CardTitle>
-                <CardDescription>What are you committing to?</CardDescription>
+                <CardDescription>Specify your behavioral commitment.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Goal Title</Label>
                   <Input 
-                    id="title" 
-                    placeholder="e.g., Design System Audit" 
-                    value={formData.title}
-                    onChange={e => setFormData({...formData, title: e.target.value})}
-                    className="bg-background/50 border-border/40"
+                    id="title" placeholder="e.g., Deep Work Session" 
+                    value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
+                    className="bg-background/50 border-border/40 h-12 rounded-xl"
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select 
-                      value={formData.category} 
-                      onValueChange={v => setFormData({...formData, category: v as any})}
-                    >
-                      <SelectTrigger id="category" className="bg-background/50 border-border/40">
-                        <SelectValue placeholder="Category" />
+                    <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v as any})}>
+                      <SelectTrigger id="category" className="bg-background/50 border-border/40 rounded-xl">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="work">Work</SelectItem>
@@ -177,119 +169,65 @@ export default function Modeler() {
                   <div className="space-y-2">
                     <Label htmlFor="time">Time</Label>
                     <Input 
-                      id="time" 
-                      type="time"
-                      value={formData.scheduledTime}
+                      id="time" type="time" value={formData.scheduledTime}
                       onChange={e => setFormData({...formData, scheduledTime: e.target.value})}
-                      className="bg-background/50 border-border/40"
+                      className="bg-background/50 border-border/40 rounded-xl"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="date">Scheduled Date</Label>
-                  <Input 
-                    id="date" 
-                    type="date"
-                    value={formData.date}
-                    onChange={e => setFormData({...formData, date: e.target.value})}
-                    className="bg-background/50 border-border/40"
-                  />
                 </div>
 
                 <div className="space-y-4 pt-2">
                   <div className="flex justify-between items-center">
                     <Label>Effort Intensity</Label>
-                    <Badge variant="outline" className="border-primary/30 text-primary">
-                      {effortLabels[formData.effortEstimate]}
-                    </Badge>
+                    <Badge variant="outline" className="border-primary/30 text-primary">{effortLabels[formData.effortEstimate]}</Badge>
                   </div>
-                  <Slider 
-                    value={[formData.effortEstimate]} 
-                    min={1}
-                    max={5} 
-                    step={1} 
-                    onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} 
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
+                  <Slider value={[formData.effortEstimate]} min={1} max={5} step={1} onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button 
-                  className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-lg shadow-primary/20" 
-                  onClick={handleAdd}
-                  disabled={submitting}
-                >
+                <Button className="w-full gap-2 rounded-xl py-6 text-base font-bold shadow-lg shadow-primary/20" onClick={handleAdd} disabled={submitting}>
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                  Lock in Today
+                  Lock in Stack
                 </Button>
               </CardFooter>
             </Card>
           </div>
 
-          {/* List Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
-                {selectedDate === today ? "Today's Stack" : `Stack for ${selectedDate}`}
-                <Badge variant="outline" className="bg-primary/10 text-primary border-none px-3">
-                  {intentions.length}
-                </Badge>
-              </h2>
-            </div>
+            <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
+              {selectedDate === today ? "Today's Stack" : `Stack for ${selectedDate}`}
+              <Badge className="bg-primary/20 text-primary border-none px-3">{intentions.length}</Badge>
+            </h2>
 
             {loading ? (
               <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i} className="bg-card/40 border-border/40 h-24 animate-pulse" />
-                ))}
+                {[1, 2, 3].map(i => <Card key={i} className="bg-card/40 h-28 animate-pulse rounded-2xl border-none" />)}
               </div>
             ) : intentions.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-border/40 rounded-3xl bg-card/10 text-center">
-                <Target className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <TargetIcon className="w-12 h-12 text-muted-foreground/30 mb-4" />
                 <h3 className="text-xl font-headline font-semibold mb-1">Stack is empty</h3>
-                <p className="text-muted-foreground max-w-xs">Nothing stacked for this day. Add your first intention in the sidebar.</p>
+                <p className="text-muted-foreground max-w-xs mb-6">Nothing planned for this date yet.</p>
+                {selectedDate !== today && (
+                   <Button variant="secondary" onClick={() => setSelectedDate(today)}>Go to Today</Button>
+                )}
               </div>
             ) : (
               <div className="grid gap-4">
                 {intentions.map(item => (
-                  <Card key={item.id} className="bg-card/40 border-border/40 overflow-hidden group hover:border-primary/50 transition-all border-none glass-card">
-                    <div className="flex p-6 gap-6 items-center">
-                      <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">Effort</div>
-                        <div className="text-2xl font-bold font-headline text-primary">
-                          {item.effortEstimate}
-                        </div>
+                  <Card key={item.id} className="bg-card/30 border-none glass-card hover:bg-card/50 transition-colors">
+                    <div className="p-6 flex items-center gap-6">
+                      <div className="text-center min-w-[50px]">
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Effort</div>
+                        <div className="text-2xl font-bold font-headline text-primary">{item.effortEstimate}</div>
                       </div>
-                      
                       <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <div>
-                            <Badge className={cn("mb-2 border-none capitalize", categoryColors[item.category])}>
-                              {item.category}
-                            </Badge>
-                            <h3 className="font-headline text-xl font-bold">{item.title}</h3>
-                          </div>
+                        <Badge className={cn("mb-2 border-none capitalize", categoryColors[item.category])}>{item.category}</Badge>
+                        <h3 className="font-headline text-xl font-bold">{item.title}</h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {item.scheduledTime}</span>
+                          <span className="flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {item.date}</span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" />
-                            {item.scheduledTime}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            {item.date}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center pr-2">
-                         <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center opacity-40">
-                           <CheckCircle2 className="w-5 h-5 text-primary" />
-                         </div>
                       </div>
                     </div>
                   </Card>
