@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Pencil, Plus, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon, BrainCircuit, Sparkles, Layers } from 'lucide-react';
+import { Pencil, Plus, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon, BrainCircuit, Sparkles, Layers, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { addIntention } from '@/lib/firestore';
 import { useData } from '@/lib/DataContext';
@@ -34,6 +35,7 @@ export default function Modeler() {
     title: '',
     category: 'work' as const,
     effortEstimate: 3,
+    estimatedDuration: 25,
     scheduledTime: format(new Date(), 'HH:mm'),
     date: today,
   });
@@ -59,6 +61,7 @@ export default function Modeler() {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
+        estimatedDuration: formData.estimatedDuration,
         scheduledTime: formData.scheduledTime,
         date: formData.date,
       });
@@ -72,7 +75,7 @@ export default function Modeler() {
           </div>
         )
       });
-      setFormData(prev => ({ ...prev, title: '', effortEstimate: 3 }));
+      setFormData(prev => ({ ...prev, title: '', effortEstimate: 3, estimatedDuration: 25 }));
       await refresh();
     } catch (error) {
       // Handled centrally
@@ -120,7 +123,6 @@ export default function Modeler() {
           </header>
 
           <div className="flex flex-col gap-16">
-            {/* Form Section - Back on Top */}
             <section id="intention-form" className="max-w-3xl mx-auto w-full">
               <Card className="pro-card border-white/5 overflow-hidden shadow-2xl">
                 <div className="h-1.5 w-full bg-gradient-to-r from-primary via-blue-500 to-primary" />
@@ -157,13 +159,13 @@ export default function Modeler() {
                       </Select>
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="time" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Scheduled Window</Label>
+                      <Label htmlFor="duration" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Duration (Minutes)</Label>
                       <div className="relative">
-                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                        <Timer className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                         <Input 
-                          id="time" type="time" 
-                          value={formData.scheduledTime} 
-                          onChange={e => setFormData({...formData, scheduledTime: e.target.value})} 
+                          id="duration" type="number" 
+                          value={formData.estimatedDuration} 
+                          onChange={e => setFormData({...formData, estimatedDuration: parseInt(e.target.value) || 25})} 
                           className="bg-white/[0.03] border-white/10 h-14 rounded-2xl pl-12 text-base" 
                         />
                       </div>
@@ -173,7 +175,7 @@ export default function Modeler() {
                   <div className="space-y-8 pt-4">
                     <div className="flex justify-between items-center">
                       <div className="space-y-1">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cognitive Effort Load</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expected Effort Load</Label>
                         <p className="text-[10px] text-muted-foreground italic">How much mental energy does this require?</p>
                       </div>
                       <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 px-4 py-1.5 font-bold text-sm">
@@ -186,11 +188,6 @@ export default function Modeler() {
                       onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} 
                       className="py-2"
                     />
-                    <div className="flex justify-between px-1">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase">Minimal</span>
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase">Moderate</span>
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase">Intense</span>
-                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="pb-10 px-8">
@@ -204,18 +201,8 @@ export default function Modeler() {
                   </Button>
                 </CardFooter>
               </Card>
-
-              <div className="mt-8 bg-primary/5 rounded-2xl p-6 border border-primary/10 flex gap-5">
-                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  <strong>Pro-Tip:</strong> High-effort intentions are most successful when scheduled during your biological peak hours. Use the <span className="text-primary font-bold italic">GapLogic Sync</span> tab to audit your actual performance.
-                </p>
-              </div>
             </section>
 
-            {/* List Section - Now at Bottom */}
             <section className="space-y-8">
               <div className="flex items-center justify-between">
                 <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
@@ -232,17 +219,11 @@ export default function Modeler() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <Skeleton className="h-44 w-full rounded-2xl" />
                   <Skeleton className="h-44 w-full rounded-2xl" />
-                  <Skeleton className="h-44 w-full rounded-2xl" />
                 </div>
               ) : filteredIntentions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.01] text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
-                    <TargetIcon className="w-8 h-8 text-muted-foreground/30" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-foreground font-bold text-lg">Empty Stack</p>
-                    <p className="text-muted-foreground text-sm max-w-[280px]">You haven't defined any intentions for this date yet. Use the form above to begin modeling.</p>
-                  </div>
+                  <TargetIcon className="w-8 h-8 text-muted-foreground/30" />
+                  <p className="text-muted-foreground text-sm max-w-[280px]">No intentions defined for this date.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -255,14 +236,10 @@ export default function Modeler() {
                           </Badge>
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Clock className="w-3.5 h-3.5" />
-                            <span className="text-xs font-bold">{item.scheduledTime}</span>
+                            <span className="text-xs font-bold">{item.estimatedDuration}m</span>
                           </div>
                         </div>
-                        
-                        <div>
-                          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</h3>
-                        </div>
-
+                        <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</h3>
                         <div className="pt-2 flex items-center justify-between border-t border-white/5">
                           <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Effort Level</span>
                           <span className="text-sm font-bold font-headline text-primary">{item.effortEstimate}/5</span>

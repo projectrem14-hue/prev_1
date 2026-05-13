@@ -20,6 +20,7 @@ export interface Intention {
   category: "health" | "work" | "learning" | "personal";
   effortEstimate: number;  // 1–5
   scheduledTime: string;   // "HH:MM"
+  estimatedDuration: number; // in minutes
   date: string;            // "YYYY-MM-DD"
   createdAt: Timestamp;
 }

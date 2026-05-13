@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   PlusSquare, 
-  CheckCircle2, 
+  Timer, 
   Brain, 
   BarChart3, 
   LogOut,
@@ -18,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 const navItems = [
   { name: 'Overview', href: '/', icon: LayoutDashboard },
   { name: 'Modeler', href: '/modeler', icon: PlusSquare },
-  { name: 'Sync', href: '/sync', icon: CheckCircle2 },
+  { name: 'Focus', href: '/sync', icon: Timer },
   { name: 'Pivot', href: '/pivot', icon: Brain },
   { name: 'Insights', href: '/insights', icon: BarChart3 },
 ];
