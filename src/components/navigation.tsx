@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -10,14 +9,13 @@ import {
   Timer, 
   Brain, 
   BarChart3, 
-  LogOut,
-  ChevronRight
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
-  { name: 'Overview', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Modeler', href: '/modeler', icon: PlusSquare },
   { name: 'Focus', href: '/sync', icon: Timer },
   { name: 'Pivot', href: '/pivot', icon: Brain },
@@ -32,7 +30,7 @@ export function Navigation() {
 
   const handleLogout = () => {
     logout();
-    toast({ title: "Session Closed", description: "Returning to entry portal." });
+    toast({ title: "Logged Out", description: "Session ended." });
     router.push('/login');
   };
 
@@ -40,11 +38,11 @@ export function Navigation() {
     <>
       {/* Desktop Sidebar */}
       <nav className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-card z-50 p-6 flex-col">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-primary-foreground" />
+        <div className="flex items-center gap-2 mb-10 px-2">
+          <div className="w-7 h-7 rounded bg-primary flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-headline text-xl font-bold tracking-tight text-foreground">GapLogic</span>
+          <span className="text-xl font-bold tracking-tight">GapLogic</span>
         </div>
 
         <div className="flex-1 space-y-1">
@@ -56,38 +54,30 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive 
-                    ? "text-primary bg-primary/5" 
+                    ? "text-primary bg-primary/10" 
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className={cn(
-                    "w-4 h-4 transition-colors",
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                  )} />
-                  {item.name}
-                </div>
-                {isActive && <ChevronRight className="w-3 h-3 text-primary" />}
+                <Icon className="w-4 h-4" />
+                {item.name}
               </Link>
             );
           })}
         </div>
 
-        <div className="mt-auto pt-6 border-t border-border">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 w-full transition-all group"
-          >
-            <LogOut className="w-4 h-4 group-hover:text-destructive" />
-            Sign Out
-          </button>
-        </div>
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors mt-auto"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
       </nav>
 
       {/* Mobile Bottom Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-50 flex items-center justify-around px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border z-50 flex items-center justify-around px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -96,12 +86,12 @@ export function Navigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{item.name}</span>
+              <Icon className="w-4 h-4" />
+              <span className="text-[9px] font-bold uppercase">{item.name}</span>
             </Link>
           );
         })}

@@ -23,12 +23,7 @@
     --border: 217 32% 17%;
     --input: 217 32% 17%;
     --ring: 217 91% 60%;
-    --radius: 0.75rem;
-    --chart-1: 217 91% 60%;
-    --chart-2: 200 80% 50%;
-    --chart-3: 170 60% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 20 90% 60%;
+    --radius: 0.5rem;
   }
 }
 
@@ -37,52 +32,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body antialiased selection:bg-primary/20;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-headline tracking-tight;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-.glass-card {
-  @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+.clean-card {
+  @apply bg-card border border-border rounded-xl transition-colors hover:border-primary/50;
 }
 
-.pro-card {
-  @apply bg-card border border-border/40 shadow-lg hover:border-primary/40 transition-all duration-300;
-}
-
-.stats-gradient {
-  @apply bg-gradient-to-br from-primary/5 via-transparent to-transparent;
-}
-
-.pulse-primary {
-  @apply relative;
-}
-
-.pulse-primary::after {
-  content: '';
-  @apply absolute -inset-1 bg-primary/20 blur rounded-full animate-pulse;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-background;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-primary/20 transition-colors;
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+.standard-button {
+  @apply h-11 rounded-lg font-semibold transition-all active:scale-[0.98];
 }
