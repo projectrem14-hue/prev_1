@@ -76,23 +76,23 @@ For each deviation, you MUST provide a detailed explanation of *why* it occurred
     *   **Internal Factors:** Lack of motivation, fatigue, procrastination, overestimation of ability, fear of failure, mood swings.
     *   **Planning Issues:** Unrealistic goals, vague intentions, lack of clear steps, poor time management.
 3.  **Identify Root Cause/Pattern:** Summarize the core reason for the inconsistency. Use terms like: "Lack of clear planning", "Frequent distractions", "Overestimation of time", "Motivation dip", "Unforeseen interruptions", "Task too daunting", "Perfectionism paralysis".
-4.  **Provide Insight:** Offer a brief, actionable insight or takeaway that the user can use to improve their consistency for similar situations in the future.
+4.  **Provide Insight:** Offer a brief, actionable insight or takeaway derived from this specific discrepancy.
 
 **Planned Intentions:**
-```json
-{{{JSON plannedIntentions}}}
-```
+{{#each plannedIntentions}}
+- {{{description}}} (Expected Effort: {{{expectedEffort}}})
+{{/each}}
 
 **Actual Behaviors:**
-```json
-{{{JSON actualBehaviors}}}
-```
+{{#each actualBehaviors}}
+- {{{description}}} (Status: {{{completionStatus}}}, Actual Time: {{{actualTimeSpent}}})
+{{/each}}
 
 **Analysis Context:**
 {{{analysisContext}}}
 
 **Output Format:**
-Your response MUST be a JSON object matching the `AnalyzeBehavioralDiscrepanciesOutputSchema`.
+Your response MUST be a JSON object matching the AnalyzeBehavioralDiscrepanciesOutputSchema.
 Focus on providing clear, empathetic, and insightful explanations. Do not generate recommendations for future actions, only analysis and insights into *past* behavior.`,
 });
 
