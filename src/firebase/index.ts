@@ -6,13 +6,14 @@ import { firebaseConfig } from './config';
 
 /**
  * Initializes Firebase services safely.
- * Returns dummy objects during SSR to prevent crashes.
+ * Returns dummy objects during SSR or if config is missing to prevent crashes.
  */
 export function initializeFirebase(): {
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
 } {
+  // Prevent server-side initialization
   if (typeof window === 'undefined') {
     return { 
       firebaseApp: {} as FirebaseApp, 
@@ -21,8 +22,18 @@ export function initializeFirebase(): {
     };
   }
 
-  // We attempt to initialize even with partial config to allow Firestore to try and connect
-  // If the user hasn't provided keys, the SDK will error only when a call is made.
+  // Check if config is at least partially present
+  const isConfigValid = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+
+  if (!isConfigValid) {
+    console.warn("Firebase configuration is missing or incomplete. Please link your project.");
+    return { 
+      firebaseApp: {} as FirebaseApp, 
+      firestore: {} as Firestore, 
+      auth: {} as Auth 
+    };
+  }
+
   try {
     const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const firestore = getFirestore(firebaseApp);

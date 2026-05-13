@@ -1,7 +1,7 @@
 
 /**
  * Firebase project configuration.
- * Ensure these values are populated in your .env file or environment settings.
+ * These values are injected by Firebase Studio.
  */
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
