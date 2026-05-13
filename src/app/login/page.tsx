@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp, signIn } from '@/lib/auth';
-import { useAuth as useFirebaseAuth } from '@/firebase';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const auth = useFirebaseAuth();
+  const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -38,20 +40,10 @@ export default function LoginPage() {
       return;
     }
 
-    if (!auth || !auth.app) {
-      toast({ 
-        variant: "destructive", 
-        title: "Configuration Error", 
-        description: "Firebase is not correctly configured. Please check your .env files." 
-      });
-      setLoading(false);
-      return;
-    }
-
     try {
       if (isSignUp) {
-        await signUp(auth, email, password);
-        toast({ title: "Welcome to GapLogic", description: "Your account has been created." });
+        await signUp(auth, db, email, password);
+        toast({ title: "Welcome to GapLogic", description: "Your account and profile have been created." });
       } else {
         await signIn(auth, email, password);
         toast({ title: "Welcome Back", description: "Successfully authenticated." });
@@ -62,7 +54,6 @@ export default function LoginPage() {
       if (error.code === 'auth/wrong-password') message = "Incorrect password. Try again.";
       if (error.code === 'auth/user-not-found') message = "No account found. Please sign up.";
       if (error.code === 'auth/email-already-in-use') message = "Email is already registered.";
-      if (error.code === 'auth/invalid-api-key') message = "Invalid Firebase API Key. Check your configuration.";
       
       toast({ variant: "destructive", title: "Auth Failed", description: message });
     } finally {

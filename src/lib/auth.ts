@@ -5,12 +5,24 @@ import {
   signOut as firebaseSignOut,
   Auth
 } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 
 /**
- * Creates a new user with email and password.
+ * Creates a new user with email and password and initializes their Firestore profile.
  */
-export async function signUp(auth: Auth, email: string, password: string) {
-  return createUserWithEmailAndPassword(auth, email, password);
+export async function signUp(auth: Auth, db: Firestore, email: string, password: string) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+
+  // Create user profile in Firestore
+  const userRef = doc(db, 'users', user.uid);
+  await setDoc(userRef, {
+    uid: user.uid,
+    email: user.email,
+    createdAt: serverTimestamp(),
+  });
+
+  return userCredential;
 }
 
 /**

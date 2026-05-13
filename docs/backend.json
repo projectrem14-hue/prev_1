@@ -1,6 +1,18 @@
 
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic information about a GapLogic user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "object", "description": "Firestore server timestamp" }
+      },
+      "required": ["uid", "email"]
+    },
     "Intention": {
       "title": "Intention",
       "description": "A user's planned habit or goal.",
@@ -34,9 +46,13 @@
     }
   },
   "auth": {
-    "providers": ["google.com"]
+    "providers": ["google.com", "password"]
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Root user document."
+    },
     "/users/{userId}/intentions/{intentionId}": {
       "schema": "Intention",
       "description": "User specific collection of goals and intentions."

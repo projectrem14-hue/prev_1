@@ -1,4 +1,15 @@
+
 import { Timestamp } from 'firebase/firestore';
+
+/**
+ * Represents basic user information.
+ */
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  createdAt: Timestamp;
+}
 
 /**
  * Represents a user's planned intention.
