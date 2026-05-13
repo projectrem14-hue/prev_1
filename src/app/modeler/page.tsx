@@ -1,14 +1,16 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Navigation } from '@/components/navigation';
+import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Pencil, Plus, Target, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon } from 'lucide-react';
+import { Pencil, Plus, Clock, Calendar as CalendarIcon, Loader2, Target as TargetIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { addIntention, getIntentionsByDate } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
@@ -42,11 +44,7 @@ export default function Modeler() {
       const data = await getIntentionsByDate(db, date);
       setIntentions(data);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Load Error",
-        description: "Failed to load intentions. Check your connection.",
-      });
+      toast({ variant: "destructive", title: "Load Error", description: "Failed to load intentions." });
     } finally {
       setLoading(false);
     }
@@ -61,18 +59,14 @@ export default function Modeler() {
 
   const handleAdd = async () => {
     if (!db) return;
-    if (!formData.title || !formData.scheduledTime || !formData.date) {
-      toast({
-        variant: "destructive",
-        title: "Missing Information",
-        description: "Please define your intention title and schedule before locking in.",
-      });
+    if (!formData.title) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Please enter a title." });
       return;
     }
 
     setSubmitting(true);
     try {
-      addIntention(db, {
+      await addIntention(db, {
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -80,67 +74,48 @@ export default function Modeler() {
         date: formData.date,
       });
 
-      toast({
-        title: "Intention locked in.",
-        description: `"${formData.title}" added to your behavioral stack.`,
-      });
-
-      setFormData(prev => ({
-        ...prev,
-        title: '',
-        effortEstimate: 3,
-      }));
-
-      // Optimitistic update would be better, but re-fetching ensures consistency
-      setTimeout(() => fetchIntentions(selectedDate), 500);
+      toast({ title: "Intention locked in.", description: `"${formData.title}" added.` });
+      setFormData(prev => ({ ...prev, title: '', effortEstimate: 3 }));
+      fetchIntentions(selectedDate);
     } catch (error) {
-      // Errors are also handled by FirebaseErrorListener
+      // Handled centrally
     } finally {
       setSubmitting(false);
     }
   };
 
-  const effortLabels: Record<number, string> = {
-    1: 'Minimal', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Intense'
-  };
-
+  const effortLabels: Record<number, string> = { 1: 'Minimal', 2: 'Low', 3: 'Moderate', 4: 'High', 5: 'Intense' };
   const categoryColors: Record<string, string> = {
-    health: 'bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25',
-    work: 'bg-blue-500/15 text-blue-500 hover:bg-blue-500/25',
-    learning: 'bg-purple-500/15 text-purple-500 hover:bg-purple-500/25',
-    personal: 'bg-orange-500/15 text-orange-500 hover:bg-orange-500/25',
+    health: 'bg-emerald-500/15 text-emerald-500',
+    work: 'bg-blue-500/15 text-blue-500',
+    learning: 'bg-purple-500/15 text-purple-500',
+    personal: 'bg-orange-500/15 text-orange-500',
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      <Navigation />
-      
-      <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
-        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Intention Modeler</h1>
-            <p className="text-muted-foreground text-lg">Define your goals with precision. Clarity is the first step to consistency.</p>
-          </div>
-          <div className="flex flex-col gap-2 min-w-[200px]">
-            <Label htmlFor="view-date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Planning Date</Label>
-            <Input 
-              id="view-date"
-              type="date"
-              className="bg-card/50 border-border/40 rounded-xl"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </div>
-        </header>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background text-foreground flex">
+        <Navigation />
+        <main className="flex-1 md:ml-64 p-6 lg:p-12 pb-24 md:pb-12">
+          <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Intention Modeler</h1>
+              <p className="text-muted-foreground text-lg">Define your goals with precision.</p>
+            </div>
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <Label htmlFor="view-date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Planning Date</Label>
+              <Input 
+                id="view-date" type="date" value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-card/50 border-border/40 rounded-xl"
+              />
+            </div>
+          </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <Card className="glass-card border-none sticky top-8">
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                  <Pencil className="w-5 h-5 text-primary" />
-                  Draft Intention
-                </CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><Pencil className="w-5 h-5 text-primary" /> Draft Intention</CardTitle>
                 <CardDescription>Specify your behavioral commitment.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -149,15 +124,14 @@ export default function Modeler() {
                   <Input 
                     id="title" placeholder="e.g., Deep Work Session" 
                     value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                    className="bg-background/50 border-border/40 h-12 rounded-xl"
+                    className="bg-background/50 h-12 rounded-xl"
                   />
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
                     <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v as any})}>
-                      <SelectTrigger id="category" className="bg-background/50 border-border/40 rounded-xl">
+                      <SelectTrigger id="category" className="bg-background/50 rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -170,75 +144,47 @@ export default function Modeler() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="time">Time</Label>
-                    <Input 
-                      id="time" type="time" value={formData.scheduledTime}
-                      onChange={e => setFormData({...formData, scheduledTime: e.target.value})}
-                      className="bg-background/50 border-border/40 rounded-xl"
-                    />
+                    <Input id="time" type="time" value={formData.scheduledTime} onChange={e => setFormData({...formData, scheduledTime: e.target.value})} className="bg-background/50 rounded-xl" />
                   </div>
                 </div>
-
                 <div className="space-y-4 pt-2">
-                  <div className="flex justify-between items-center">
-                    <Label>Effort Intensity</Label>
-                    <Badge variant="outline" className="border-primary/30 text-primary">{effortLabels[formData.effortEstimate]}</Badge>
-                  </div>
+                  <div className="flex justify-between items-center"><Label>Effort Intensity</Label><Badge variant="outline" className="text-primary">{effortLabels[formData.effortEstimate]}</Badge></div>
                   <Slider value={[formData.effortEstimate]} min={1} max={5} step={1} onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} />
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button className="w-full gap-2 rounded-xl py-6 text-base font-bold shadow-lg shadow-primary/20" onClick={handleAdd} disabled={submitting}>
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                  Lock in Stack
-                </Button>
-              </CardFooter>
+              <CardFooter><Button className="w-full gap-2 rounded-xl py-6 font-bold shadow-lg shadow-primary/20" onClick={handleAdd} disabled={submitting}>{submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />} Lock in Stack</Button></CardFooter>
             </Card>
-          </div>
 
-          <div className="lg:col-span-2 space-y-6">
-            <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
-              {selectedDate === today ? "Today's Stack" : `Stack for ${selectedDate}`}
-              <Badge className="bg-primary/20 text-primary border-none px-3">{intentions.length}</Badge>
-            </h2>
-
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => <Card key={i} className="bg-card/40 h-28 animate-pulse rounded-2xl border-none" />)}
-              </div>
-            ) : intentions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-border/40 rounded-3xl bg-card/10 text-center">
-                <TargetIcon className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-headline font-semibold mb-1">Stack is empty</h3>
-                <p className="text-muted-foreground max-w-xs mb-6">Nothing planned for this date yet.</p>
-                {selectedDate !== today && (
-                   <Button variant="secondary" onClick={() => setSelectedDate(today)}>Go to Today</Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {intentions.map(item => (
-                  <Card key={item.id} className="bg-card/30 border-none glass-card hover:bg-card/50 transition-colors">
-                    <div className="p-6 flex items-center gap-6">
-                      <div className="text-center min-w-[50px]">
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Effort</div>
-                        <div className="text-2xl font-bold font-headline text-primary">{item.effortEstimate}</div>
-                      </div>
-                      <div className="flex-1">
-                        <Badge className={cn("mb-2 border-none capitalize", categoryColors[item.category])}>{item.category}</Badge>
-                        <h3 className="font-headline text-xl font-bold">{item.title}</h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {item.scheduledTime}</span>
-                          <span className="flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {item.date}</span>
+            <div className="lg:col-span-2 space-y-6">
+              <h2 className="font-headline text-2xl font-bold flex items-center gap-3">Your Stack <Badge className="bg-primary/20 text-primary border-none">{intentions.length}</Badge></h2>
+              {loading ? <Skeleton className="h-44 w-full rounded-2xl" /> : intentions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-3xl bg-card/10 text-center">
+                  <TargetIcon className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">Nothing planned for this date yet.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {intentions.map(item => (
+                    <Card key={item.id} className="bg-card/30 border-none glass-card">
+                      <div className="p-6 flex items-center gap-6">
+                        <div className="text-center min-w-[50px]"><div className="text-[10px] font-bold text-muted-foreground uppercase">Effort</div><div className="text-2xl font-bold font-headline text-primary">{item.effortEstimate}</div></div>
+                        <div className="flex-1">
+                          <Badge className={cn("mb-2 border-none capitalize", categoryColors[item.category])}>{item.category}</Badge>
+                          <h3 className="font-headline text-xl font-bold">{item.title}</h3>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {item.scheduledTime}</span>
+                            <span className="flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {item.date}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }

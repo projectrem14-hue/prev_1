@@ -2,9 +2,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Pencil, RefreshCw, BrainCircuit, BarChart3, Settings } from 'lucide-react';
+import { LayoutDashboard, Pencil, RefreshCw, BrainCircuit, BarChart3, Settings, LogOut } from 'lucide-react';
+import { signOut } from '@/lib/auth';
+import { useAuth } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -16,6 +19,19 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Signed out", description: "Come back soon to bridge the gap." });
+      router.push('/login');
+    } catch (error) {
+      toast({ variant: "destructive", title: "Logout Error", description: "Failed to sign out properly." });
+    }
+  };
 
   return (
     <>
@@ -56,10 +72,17 @@ export function Navigation() {
           })}
         </div>
 
-        <div className="mt-auto pt-6 border-t border-border/40">
+        <div className="mt-auto flex flex-col gap-2 pt-6 border-t border-border/40">
           <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground w-full transition-all">
             <Settings className="w-4 h-4" />
             Settings
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 w-full transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
           </button>
         </div>
       </nav>
@@ -83,6 +106,13 @@ export function Navigation() {
             </Link>
           );
         })}
+        <button 
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-destructive"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Logout</span>
+        </button>
       </nav>
     </>
   );
