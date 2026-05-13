@@ -28,7 +28,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!db || !user) {
+    if (!db || !user || !db.type) {
       setLoading(false);
       return;
     }
@@ -48,8 +48,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [db, user]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    // Immediate refresh on mount/user change
+    if (user && db && db.type) {
+      refresh();
+    } else if (!user) {
+      setIntentions([]);
+      setLogs([]);
+      setLoading(false);
+    }
+  }, [user, db, refresh]);
 
   return (
     <DataContext.Provider value={{ intentions, logs, loading, refresh }}>
