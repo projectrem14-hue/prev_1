@@ -22,27 +22,18 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize state directly from localStorage if available to avoid flashes
-  const [user, setUser] = useState<MockUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('gaplogic_session');
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
-  
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      // If we have a session, we aren't "loading" in a blocking sense
-      return !localStorage.getItem('gaplogic_session');
-    }
-    return true;
-  });
+  const [user, setUser] = useState<MockUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Correctly handle client-side initialization to avoid hydration mismatches
     const savedUser = localStorage.getItem('gaplogic_session');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('gaplogic_session');
+      }
     }
     setLoading(false);
   }, []);
