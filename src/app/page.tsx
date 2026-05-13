@@ -68,12 +68,13 @@ export default function Dashboard() {
           });
           const topFriction = Object.entries(incompleteCategories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
+          // Simple streak calculation (consecutive days with at least one completed intention)
           const dates = Array.from(new Set(allIntentions.map(i => i.date))).sort((a, b) => b.localeCompare(a));
           let currentStreak = 0;
           for (const date of dates) {
             const dayIntentions = allIntentions.filter(i => i.date === date);
             const dayLogs = allLogs.filter(l => l.date === date && l.completed);
-            if (dayIntentions.length > 0 && (dayLogs.length / dayIntentions.length) >= 0.5) {
+            if (dayIntentions.length > 0 && dayLogs.length > 0) {
               currentStreak++;
             } else {
               break;
@@ -157,7 +158,7 @@ export default function Dashboard() {
               </header>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <Card className="glass-card">
+                <Card className="glass-card border-none">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <Target className="w-4 h-4 text-primary" />
@@ -170,7 +171,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
                 
-                <Card className="glass-card">
+                <Card className="glass-card border-none">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <Zap className="w-4 h-4 text-accent" />
@@ -187,7 +188,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card">
+                <Card className="glass-card border-none">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <TrendingDown className="w-4 h-4 text-secondary" />
@@ -200,7 +201,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card">
+                <Card className="glass-card border-none">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-destructive" />
