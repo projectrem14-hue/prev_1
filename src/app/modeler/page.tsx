@@ -119,67 +119,8 @@ export default function Modeler() {
             </div>
           </header>
 
-          <div className="flex flex-col gap-12">
-            {/* List Section - Now on Top */}
-            <section className="space-y-8">
-              <div className="flex items-center justify-between">
-                <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
-                  <Layers className="w-6 h-6 text-primary" />
-                  Your Cognitive Stack 
-                  <Badge className="bg-white/5 text-muted-foreground border-white/10 px-2.5 py-0.5 text-sm font-medium">
-                    {filteredIntentions.length}
-                  </Badge>
-                </h2>
-                <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{format(new Date(selectedDate), 'EEEE, MMM dd')}</span>
-              </div>
-
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Skeleton className="h-32 rounded-2xl" />
-                  <Skeleton className="h-32 rounded-2xl" />
-                  <Skeleton className="h-32 rounded-2xl" />
-                </div>
-              ) : filteredIntentions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.01] text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
-                    <TargetIcon className="w-8 h-8 text-muted-foreground/30" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-foreground font-bold text-lg">Empty Stack</p>
-                    <p className="text-muted-foreground text-sm max-w-[280px]">You haven't defined any intentions for this date yet. Scroll down to begin modeling.</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredIntentions.map((item, index) => (
-                    <Card key={item.id} className="bg-white/[0.02] border-white/5 hover:border-primary/30 transition-all duration-300 overflow-hidden glass-card group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${index * 50}ms` }}>
-                      <div className="p-5 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Badge className={cn("border px-2 py-0 text-[10px] uppercase font-bold tracking-widest", categoryColors[item.category])}>
-                            {item.category}
-                          </Badge>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span className="text-xs font-bold">{item.scheduledTime}</span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</h3>
-                        </div>
-
-                        <div className="pt-2 flex items-center justify-between border-t border-white/5">
-                          <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Effort Level</span>
-                          <span className="text-sm font-bold font-headline text-primary">{item.effortEstimate}/5</span>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* Form Section - Now at Bottom */}
+          <div className="flex flex-col gap-16">
+            {/* Form Section - Back on Top */}
             <section id="intention-form" className="max-w-3xl mx-auto w-full">
               <Card className="pro-card border-white/5 overflow-hidden shadow-2xl">
                 <div className="h-1.5 w-full bg-gradient-to-r from-primary via-blue-500 to-primary" />
@@ -272,6 +213,65 @@ export default function Modeler() {
                   <strong>Pro-Tip:</strong> High-effort intentions are most successful when scheduled during your biological peak hours. Use the <span className="text-primary font-bold italic">GapLogic Sync</span> tab to audit your actual performance.
                 </p>
               </div>
+            </section>
+
+            {/* List Section - Now at Bottom */}
+            <section className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="font-headline text-2xl font-bold flex items-center gap-3">
+                  <Layers className="w-6 h-6 text-primary" />
+                  Your Cognitive Stack 
+                  <Badge className="bg-white/5 text-muted-foreground border-white/10 px-2.5 py-0.5 text-sm font-medium">
+                    {filteredIntentions.length}
+                  </Badge>
+                </h2>
+                <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{format(new Date(selectedDate), 'EEEE, MMM dd')}</span>
+              </div>
+
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Skeleton className="h-44 w-full rounded-2xl" />
+                  <Skeleton className="h-44 w-full rounded-2xl" />
+                  <Skeleton className="h-44 w-full rounded-2xl" />
+                </div>
+              ) : filteredIntentions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.01] text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                    <TargetIcon className="w-8 h-8 text-muted-foreground/30" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-foreground font-bold text-lg">Empty Stack</p>
+                    <p className="text-muted-foreground text-sm max-w-[280px]">You haven't defined any intentions for this date yet. Use the form above to begin modeling.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredIntentions.map((item, index) => (
+                    <Card key={item.id} className="bg-white/[0.02] border-white/5 hover:border-primary/30 transition-all duration-300 overflow-hidden glass-card group animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${index * 50}ms` }}>
+                      <div className="p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Badge className={cn("border px-2 py-0 text-[10px] uppercase font-bold tracking-widest", categoryColors[item.category])}>
+                            {item.category}
+                          </Badge>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="text-xs font-bold">{item.scheduledTime}</span>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</h3>
+                        </div>
+
+                        <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                          <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Effort Level</span>
+                          <span className="text-sm font-bold font-headline text-primary">{item.effortEstimate}/5</span>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         </main>
