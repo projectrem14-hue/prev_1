@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, Loader2, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { BrainCircuit, Loader2, Mail, Lock, UserPlus, LogIn, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -66,6 +67,13 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold font-headline tracking-tight">GapLogic</h1>
           <p className="text-muted-foreground">Master the gap between intention and reality.</p>
         </div>
+
+        <Alert className="bg-primary/5 border-primary/20 text-primary-foreground/80">
+          <Info className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-xs">
+            <strong>Mock Auth Enabled:</strong> No real Firebase account needed. Register first with any 6+ character password to create a local session.
+          </AlertDescription>
+        </Alert>
 
         <Card className="glass-card border-none">
           <CardHeader>
