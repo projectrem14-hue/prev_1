@@ -30,6 +30,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const refresh = useCallback(async () => {
     if (!db || !user) return;
+    // Don't set loading to true here to avoid flickering on manual refresh
     try {
       const [allInts, allLogs] = await Promise.all([
         getAllIntentions(db, user.uid),
