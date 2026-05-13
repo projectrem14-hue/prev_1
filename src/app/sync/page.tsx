@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { Zap, CheckCircle2, CircleDashed, XCircle, AlertCircle, Clock, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +25,7 @@ export default function RealitySync() {
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12 overflow-y-auto">
+      <main className="flex-1 ml-64 p-8 lg:p-12">
         <header className="mb-10 flex justify-between items-end">
           <div>
             <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Reality Sync</h1>
@@ -46,7 +47,7 @@ export default function RealitySync() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="space-y-6">
+          <TabsContent value="active" className="space-y-6 pb-12">
             <div className="grid grid-cols-1 gap-6">
               {mockDailyStack.map((item) => (
                 <Card key={item.id} className="bg-card/30 border-border/40 border-none glass-card">

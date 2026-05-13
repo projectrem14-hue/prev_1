@@ -43,7 +43,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12 overflow-y-auto">
+      <main className="flex-1 ml-64 p-8 lg:p-12">
         <header className="mb-10 flex justify-between items-end">
           <div>
             <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Cognitive Dashboard</h1>
@@ -171,7 +171,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <section>
+        <section className="pb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-headline text-2xl font-bold">Recent Discrepancies</h2>
             <Badge className="bg-primary/20 text-primary border-none hover:bg-primary/30 cursor-pointer">View Audit History</Badge>

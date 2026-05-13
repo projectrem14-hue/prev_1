@@ -54,13 +54,13 @@ export default function Modeler() {
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12 overflow-y-auto">
+      <main className="flex-1 ml-64 p-8 lg:p-12">
         <header className="mb-10">
           <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Intention Modeler</h1>
           <p className="text-muted-foreground text-lg">Define your goals with precision. Clarity is the first step to consistency.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
           <div className="lg:col-span-1">
             <Card className="glass-card sticky top-8 border-none">
               <CardHeader>

@@ -57,7 +57,7 @@ export default function Pivot() {
     <div className="min-h-screen bg-background text-foreground flex">
       <Navigation />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12 overflow-y-auto">
+      <main className="flex-1 ml-64 p-8 lg:p-12">
         <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Cognitive Pivot</h1>
@@ -85,8 +85,7 @@ export default function Pivot() {
         )}
 
         {loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 opacity-50 pointer-events-none grayscale">
-            {/* Skeletal layout for loading state */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 opacity-50 pointer-events-none grayscale pb-12">
             <div className="space-y-6">
               <div className="h-[400px] bg-card rounded-3xl animate-pulse" />
             </div>
@@ -97,7 +96,7 @@ export default function Pivot() {
         )}
 
         {(analysis || recommendations) && !loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-12">
             {/* Discrepancy Auditor Results */}
             <div className="lg:col-span-5 space-y-6">
               <div className="flex items-center justify-between">
@@ -108,29 +107,27 @@ export default function Pivot() {
                 <Badge variant="outline" className="rounded-full border-accent/30 text-accent bg-accent/5 font-mono">V.2.1-Flash</Badge>
               </div>
 
-              <ScrollArea className="h-[calc(100vh-280px)] pr-4">
-                <div className="space-y-4">
-                  {analysis?.discrepancies.map((d, i) => (
-                    <Card key={i} className="bg-card/40 border-border/40 hover:bg-card/60 transition-colors cursor-default border-l-4 border-l-destructive/50">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <Badge variant="outline" className="text-[10px] uppercase text-muted-foreground">{d.inconsistencyReason}</Badge>
-                        </div>
-                        <CardTitle className="text-lg font-headline mt-1">{d.plannedItem.description}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{d.deviationExplanation}</p>
-                        <div className="bg-primary/10 p-3 rounded-xl border border-primary/20">
-                          <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <Lightbulb className="w-3 h-3" /> Root Insight
-                          </p>
-                          <p className="text-sm italic text-foreground/90">"{d.suggestedInsight}"</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="space-y-4">
+                {analysis?.discrepancies.map((d, i) => (
+                  <Card key={i} className="bg-card/40 border-border/40 hover:bg-card/60 transition-colors cursor-default border-l-4 border-l-destructive/50">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <Badge variant="outline" className="text-[10px] uppercase text-muted-foreground">{d.inconsistencyReason}</Badge>
+                      </div>
+                      <CardTitle className="text-lg font-headline mt-1">{d.plannedItem.description}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{d.deviationExplanation}</p>
+                      <div className="bg-primary/10 p-3 rounded-xl border border-primary/20">
+                        <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-1 flex items-center gap-1">
+                          <Lightbulb className="w-3 h-3" /> Root Insight
+                        </p>
+                        <p className="text-sm italic text-foreground/90">"{d.suggestedInsight}"</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
             {/* Pivot Engine Recommendations */}
