@@ -37,7 +37,7 @@
 }
 
 .clean-card {
-  @apply bg-card border border-border rounded-xl transition-colors hover:border-primary/50;
+  @apply bg-card border border-border rounded-xl;
 }
 
 .standard-button {

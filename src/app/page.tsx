@@ -11,9 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useData } from '@/lib/DataContext';
 import { 
   Target, 
-  TrendingDown, 
   AlertCircle, 
-  Plus,
   Calendar,
   Activity,
   Flame
@@ -63,10 +61,10 @@ export default function Dashboard() {
           <Navigation />
           <main className="flex-1 md:ml-64 p-6 space-y-6">
             <Skeleton className="h-8 w-48" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
             </div>
-            <Skeleton className="h-96 w-full rounded-lg" />
+            <Skeleton className="h-[400px] w-full rounded-xl" />
           </main>
         </div>
       </ProtectedRoute>
@@ -78,89 +76,92 @@ export default function Dashboard() {
       <div className="min-h-screen bg-background flex">
         <Navigation />
         
-        <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20">
+        <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20 max-w-6xl mx-auto w-full">
           {intentions.length === 0 ? (
-            <div className="max-w-2xl mx-auto py-20 text-center space-y-6">
-              <h1 className="text-4xl font-bold tracking-tight">Welcome to GapLogic</h1>
-              <p className="text-muted-foreground text-lg">
-                Start by modeling your first behavioral intentions to begin the diagnostic process.
-              </p>
-              <div className="flex gap-4 justify-center pt-4">
-                <Link href="/modeler">
-                  <Button className="standard-button px-8">Establish First Intention</Button>
-                </Link>
+            <div className="py-20 text-center space-y-8 max-w-xl mx-auto">
+              <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
+                <Target className="w-10 h-10 text-primary" />
               </div>
+              <div className="space-y-4">
+                <h1 className="text-4xl font-bold tracking-tight">Your Audit Begins Here</h1>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  GapLogic helps you analyze behavioral leaks by comparing your plans to your reality. Establish your first set of intentions to start.
+                </p>
+              </div>
+              <Link href="/modeler">
+                <Button className="h-14 px-10 text-lg font-bold">Establish First Intention</Button>
+              </Link>
             </div>
           ) : (
             <>
-              <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
                 <Link href="/sync">
-                  <Button variant="outline" className="h-10 gap-2">
+                  <Button variant="outline" className="h-11 px-6 gap-2">
                     <Calendar className="w-4 h-4" />
-                    Focus Session
+                    Enter Focus Session
                   </Button>
                 </Link>
               </header>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
                 <Card className="clean-card">
-                  <CardContent className="p-6">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Integrity Rate</p>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-3xl font-bold">{metrics?.intentionRate}%</h3>
-                      <Target className="w-5 h-5 text-primary opacity-50" />
+                  <CardContent className="p-8">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Integrity Rate</p>
+                    <div className="flex items-end justify-between mb-4">
+                      <h3 className="text-4xl font-bold">{metrics?.intentionRate}%</h3>
+                      <Target className="w-6 h-6 text-primary opacity-40" />
                     </div>
-                    <Progress value={metrics?.intentionRate} className="h-1.5" />
+                    <Progress value={metrics?.intentionRate} className="h-2" />
                   </CardContent>
                 </Card>
                 
                 <Card className="clean-card">
-                  <CardContent className="p-6">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Current Streak</p>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-3xl font-bold">{metrics?.streak} Days</h3>
-                      <Flame className="w-5 h-5 text-primary opacity-50" />
+                  <CardContent className="p-8">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Current Streak</p>
+                    <div className="flex items-end justify-between">
+                      <h3 className="text-4xl font-bold">{metrics?.streak} Days</h3>
+                      <Flame className="w-6 h-6 text-primary opacity-40" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="clean-card">
-                  <CardContent className="p-6">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pending Sync</p>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-3xl font-bold">{metrics?.criticalDeviations}</h3>
-                      <AlertCircle className="w-5 h-5 text-muted-foreground opacity-50" />
+                  <CardContent className="p-8">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Pending Sync</p>
+                    <div className="flex items-end justify-between">
+                      <h3 className="text-4xl font-bold">{metrics?.criticalDeviations}</h3>
+                      <AlertCircle className="w-6 h-6 text-muted-foreground opacity-40" />
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              <section className="space-y-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-primary" />
-                  Recent Activity
+              <section className="space-y-6">
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-primary" />
+                  Behavioral Activity
                 </h2>
                 
-                <div className="grid gap-3">
-                  {[...intentions].slice(0, 5).map((item) => {
+                <div className="space-y-3">
+                  {[...intentions].slice(0, 6).map((item) => {
                     const log = logs.find(l => l.intentionId === item.id);
                     return (
-                      <div key={item.id} className="clean-card p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                      <div key={item.id} className="clean-card p-5 flex items-center justify-between">
+                        <div className="flex items-center gap-5">
                           <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center",
+                            "w-12 h-12 rounded-xl flex items-center justify-center",
                             log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary text-muted-foreground"
                           )}>
-                            <Target className="w-5 h-5" />
+                            <Target className="w-6 h-6" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold">{item.title}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{item.category} • {item.date}</p>
+                            <p className="font-bold">{item.title}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{item.category} • {item.date}</p>
                           </div>
                         </div>
                         <Badge variant="outline" className={cn(
-                          "text-[10px] uppercase font-bold tracking-widest px-3 border-none",
+                          "text-[10px] uppercase font-bold tracking-widest px-4 h-7 border-none",
                           log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary"
                         )}>
                           {log ? (log.completed ? "Completed" : "Missed") : "Pending"}

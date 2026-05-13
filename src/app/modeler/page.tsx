@@ -15,9 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { useFirestore } from '@/firebase';
 import { format } from 'date-fns';
-import { Plus, Loader2, Layers, Clock, BrainCircuit } from 'lucide-react';
+import { Plus, Loader2, Layers, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 export default function Modeler() {
   const { toast } = useToast();
@@ -68,6 +67,7 @@ export default function Modeler() {
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3, estimatedDuration: 25 }));
       await refresh();
     } catch (error) {
+      // Handled centrally
     } finally {
       setSubmitting(false);
     }
@@ -77,9 +77,9 @@ export default function Modeler() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background flex">
         <Navigation />
-        <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20 max-w-5xl mx-auto w-full">
+        <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20 max-w-6xl mx-auto w-full">
           <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <h1 className="text-3xl font-bold tracking-tight">Modeler</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Intention Modeler</h1>
             <div className="flex items-center gap-2">
               <Label className="text-xs font-bold uppercase text-muted-foreground">Focus Date</Label>
               <Input 
@@ -88,34 +88,34 @@ export default function Modeler() {
                   setSelectedDate(e.target.value);
                   setFormData(prev => ({ ...prev, date: e.target.value }));
                 }}
-                className="w-40 h-9 rounded-lg"
+                className="w-44 h-10 rounded-lg bg-card"
               />
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-            <div className="lg:col-span-2">
-              <Card className="clean-card shadow-none">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-primary" />
-                    New Intention
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Title</Label>
+          <div className="grid grid-cols-1 gap-10">
+            <Card className="clean-card">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-primary" />
+                  Establish New Intention
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Task Title</Label>
                     <Input 
-                      placeholder="e.g. Morning Meditation" 
+                      placeholder="e.g. Deep Work Session" 
                       value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                      className="rounded-lg h-10"
+                      className="rounded-lg h-12 text-lg"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Domain</Label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Domain</Label>
                       <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v as any})}>
-                        <SelectTrigger className="rounded-lg h-10">
+                        <SelectTrigger className="rounded-lg h-12">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -126,75 +126,79 @@ export default function Modeler() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Time (Min)</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Duration (Min)</Label>
                       <Input 
                         type="number" value={formData.estimatedDuration} 
                         onChange={e => setFormData({...formData, estimatedDuration: parseInt(e.target.value) || 25})} 
-                        className="rounded-lg h-10"
+                        className="rounded-lg h-12"
                       />
                     </div>
                   </div>
+                </div>
+                <div className="space-y-6">
                   <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Effort</Label>
-                      <span className="text-xs font-bold text-primary">{formData.effortEstimate}/5</span>
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Anticipated Effort</Label>
+                      <span className="text-sm font-bold text-primary">{formData.effortEstimate}/5</span>
                     </div>
                     <Slider 
                       value={[formData.effortEstimate]} 
                       min={1} max={5} step={1} 
                       onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} 
+                      className="py-4"
                     />
+                    <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
+                      <span>Low</span>
+                      <span>High</span>
+                    </div>
                   </div>
-                </CardContent>
-                <CardFooter>
                   <Button 
-                    className="w-full standard-button gap-2" 
+                    className="w-full h-14 text-lg font-bold gap-2 mt-2" 
                     onClick={handleAdd} 
                     disabled={submitting}
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} 
-                    Save Intention
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />} 
+                    Add to Stack
                   </Button>
-                </CardFooter>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="lg:col-span-3 space-y-4">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" />
-                Your Stack
-                <Badge variant="secondary" className="ml-2 px-1.5 h-4 text-[10px] font-bold">
-                  {filteredIntentions.length}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Layers className="w-6 h-6 text-primary" />
+                Your Cognitive Stack
+                <Badge variant="secondary" className="ml-2 px-2 h-6 text-xs font-bold">
+                  {filteredIntentions.length} Tasks
                 </Badge>
               </h2>
 
               {loading ? (
                 <div className="space-y-3">
-                  {[1, 2].map(i => <div key={i} className="h-16 bg-card rounded-lg animate-pulse" />)}
+                  {[1, 2, 3].map(i => <div key={i} className="h-20 bg-card border rounded-xl animate-pulse" />)}
                 </div>
               ) : filteredIntentions.length === 0 ? (
-                <div className="p-12 border border-dashed rounded-xl text-center text-muted-foreground text-sm">
-                  Empty for this date.
+                <div className="p-20 border border-dashed rounded-2xl text-center text-muted-foreground">
+                  No intentions established for this date.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredIntentions.map((item) => (
-                    <div key={item.id} className="clean-card p-4 flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="font-bold text-sm">{item.title}</p>
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="text-[8px] h-3.5 border-none bg-secondary">
-                            {item.category}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {item.estimatedDuration}m
-                          </span>
+                    <div key={item.id} className="clean-card p-6 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-bold tracking-wider">
+                          {item.category}
+                        </Badge>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">Effort</p>
+                          <p className="text-sm font-bold text-primary">{item.effortEstimate}/5</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[9px] font-bold uppercase text-muted-foreground">Effort</p>
-                        <p className="text-xs font-bold text-primary">{item.effortEstimate}/5</p>
+                      <p className="font-bold text-lg leading-tight">{item.title}</p>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-xs font-medium">{item.estimatedDuration} Minutes</span>
                       </div>
                     </div>
                   ))}
