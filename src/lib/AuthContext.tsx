@@ -1,56 +1,37 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-
-interface MockUser {
-  uid: string;
-  email: string;
-}
+import { useAuth as useFirebaseAuth } from '@/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface AuthContextType {
-  user: MockUser | null;
+  user: User | null;
   loading: boolean;
-  login: (email: string) => void;
-  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
   user: null, 
-  loading: true,
-  login: () => {},
-  logout: () => {}
+  loading: true
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const auth = useFirebaseAuth();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Correctly handle client-side initialization to avoid hydration mismatches
-    const savedUser = localStorage.getItem('gaplogic_session');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('gaplogic_session');
-      }
-    }
-    setLoading(false);
-  }, []);
+    if (!auth) return;
+    
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
 
-  const login = (email: string) => {
-    const newUser = { uid: btoa(email), email };
-    setUser(newUser);
-    localStorage.setItem('gaplogic_session', JSON.stringify(newUser));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('gaplogic_session');
-  };
+    return () => unsubscribe();
+  }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading }}>
       {children}
     </AuthContext.Provider>
   );

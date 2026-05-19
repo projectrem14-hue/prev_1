@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth as useFirebaseStudioAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { BrainCircuit, Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -16,27 +18,42 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   
-  const { login } = useAuth();
+  const auth = useFirebaseStudioAuth();
+  const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) return;
     setLoading(true);
 
-    if (password.length < 6) {
-      toast({ variant: "destructive", title: "Auth Error", description: "Password must be at least 6 characters." });
+    try {
+      if (isSignUp) {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        // Initialize profile
+        if (db) {
+          await setDoc(doc(db, 'users', result.user.uid), {
+            uid: result.user.uid,
+            email: result.user.email,
+            createdAt: serverTimestamp(),
+          });
+        }
+        toast({ title: "Account Created", description: "Welcome to GapLogic." });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({ title: "Welcome Back", description: "Successfully signed in." });
+      }
+      router.push('/');
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Authentication Error", 
+        description: error.message || "Invalid credentials." 
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Handle session creation
-    login(email);
-    toast({ 
-      title: isSignUp ? "Account Created" : "Welcome Back", 
-      description: `Logged in as ${email}` 
-    });
-    router.push('/');
   };
 
   return (
@@ -50,7 +67,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground text-sm">Analyze and bridge the gap between intention and reality.</p>
         </div>
 
-        <Card className="glass-card border-none">
+        <Card className="clean-card">
           <CardHeader>
             <CardTitle className="font-headline text-2xl text-center">
               {isSignUp ? "Create Account" : "Sign In"}
@@ -63,47 +80,29 @@ export default function LoginPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    id="email" type="email" placeholder="name@example.com" 
-                    value={email} onChange={e => setEmail(e.target.value)}
-                    className="pl-10 bg-background/50 h-12 rounded-xl" required
-                  />
-                </div>
+                <Input 
+                  id="email" type="email" placeholder="name@example.com" 
+                  value={email} onChange={e => setEmail(e.target.value)}
+                  className="bg-background h-12 rounded-xl" required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    id="password" type="password" placeholder="••••••••" 
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    className="pl-10 bg-background/50 h-12 rounded-xl" required
-                  />
-                </div>
+                <Input 
+                  id="password" type="password" placeholder="••••••••" 
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  className="bg-background h-12 rounded-xl" required
+                />
               </div>
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      id="confirm-password" type="password" placeholder="••••••••" 
-                      className="pl-10 bg-background/50 h-12 rounded-xl" required
-                    />
-                  </div>
-                </div>
-              )}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20" disabled={loading}>
+              <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg" disabled={loading}>
                 {loading ? "Processing..." : (isSignUp ? "Sign Up" : "Sign In")}
               </Button>
               <Button 
                 type="button" 
                 variant="ghost" 
-                className="w-full text-muted-foreground hover:text-primary"
+                className="w-full text-muted-foreground"
                 onClick={() => setIsSignUp(!isSignUp)}
               >
                 {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}

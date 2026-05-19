@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Navigation } from '@/components/navigation';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ export default function Modeler() {
   const { toast } = useToast();
   const { user } = useAuth();
   const db = useFirestore();
-  const { intentions, loading, refresh } = useData();
+  const { intentions, loading } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [submitting, setSubmitting] = useState(false);
@@ -65,7 +65,6 @@ export default function Modeler() {
 
       toast({ title: "Success", description: "Intention added." });
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3, estimatedDuration: 25 }));
-      await refresh();
     } catch (error) {
       // Handled centrally
     } finally {
@@ -148,10 +147,6 @@ export default function Modeler() {
                       onValueChange={([v]) => setFormData({...formData, effortEstimate: v})} 
                       className="py-4"
                     />
-                    <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                      <span>Low</span>
-                      <span>High</span>
-                    </div>
                   </div>
                   <Button 
                     className="w-full h-14 text-lg font-bold gap-2 mt-2" 
@@ -175,8 +170,8 @@ export default function Modeler() {
               </h2>
 
               {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <div key={i} className="h-20 bg-card border rounded-xl animate-pulse" />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(i => <div key={i} className="h-40 bg-card rounded-xl animate-pulse" />)}
                 </div>
               ) : filteredIntentions.length === 0 ? (
                 <div className="p-20 border border-dashed rounded-2xl text-center text-muted-foreground">
