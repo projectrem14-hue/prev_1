@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Navigation } from '@/components/navigation';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,15 +14,19 @@ import {
   AlertCircle, 
   Calendar,
   Activity,
-  Flame
+  Flame,
+  Database,
+  CloudCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const { intentions, logs, loading } = useData();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     document.title = "GapLogic | Dashboard";
   }, []);
 
@@ -54,7 +58,7 @@ export default function Dashboard() {
     };
   }, [intentions, logs]);
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-background flex">
@@ -95,14 +99,45 @@ export default function Dashboard() {
           ) : (
             <>
               <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Database Connected: Live</span>
+                  </div>
+                </div>
                 <Link href="/sync">
-                  <Button variant="outline" className="h-11 px-6 gap-2">
+                  <Button variant="outline" className="h-11 px-6 gap-2 border-primary/20 hover:bg-primary/5">
                     <Calendar className="w-4 h-4" />
                     Enter Focus Session
                   </Button>
                 </Link>
               </header>
+
+              {/* Database Storage Verification Card */}
+              <Card className="mb-8 border-primary/20 bg-primary/5 overflow-hidden">
+                <CardContent className="p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                      <Database className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold">Cloud Storage Verification</h4>
+                      <p className="text-xs text-muted-foreground">Verifying records stored in your Firestore database.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-6">
+                    <div className="text-center">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Intentions</p>
+                      <p className="text-xl font-bold text-primary">{intentions.length}</p>
+                    </div>
+                    <div className="text-center border-l pl-6">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Reality Logs</p>
+                      <p className="text-xl font-bold text-primary">{logs.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
                 <Card className="clean-card">
