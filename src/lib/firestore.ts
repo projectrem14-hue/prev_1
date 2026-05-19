@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -10,9 +9,12 @@ import {
 import { Intention, RealityLog } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { PUBLIC_USER_ID } from './DataContext';
 
 export function addIntention(db: Firestore, userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
-  const colRef = collection(db, 'users', userId, 'intentions');
+  // We use the provided userId or fall back to public if needed, 
+  // but for consistency we'll use the public ID now.
+  const colRef = collection(db, 'users', PUBLIC_USER_ID, 'intentions');
   const payload = {
     ...data,
     createdAt: serverTimestamp(),
@@ -28,7 +30,7 @@ export function addIntention(db: Firestore, userId: string, data: Omit<Intention
 }
 
 export function addRealityLog(db: Firestore, userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
-  const colRef = collection(db, 'users', userId, 'realityLogs');
+  const colRef = collection(db, 'users', PUBLIC_USER_ID, 'realityLogs');
   const payload = {
     ...data,
     createdAt: serverTimestamp(),

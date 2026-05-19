@@ -1,13 +1,13 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
 import { useFirestore } from '@/firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Intention, RealityLog } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+
+export const PUBLIC_USER_ID = 'default-user';
 
 interface DataContextType {
   intentions: Intention[];
@@ -22,21 +22,17 @@ const DataContext = createContext<DataContextType>({
 });
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
   const db = useFirestore();
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db || !user) {
-      if (user === null) setLoading(false);
-      return;
-    }
+    if (!db) return;
 
     setLoading(true);
 
-    const intentionsRef = collection(db, 'users', user.uid, 'intentions');
+    const intentionsRef = collection(db, 'users', PUBLIC_USER_ID, 'intentions');
     const intentionsQuery = query(intentionsRef, orderBy('createdAt', 'desc'));
     
     const unsubIntentions = onSnapshot(intentionsQuery, 
@@ -54,7 +50,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    const logsRef = collection(db, 'users', user.uid, 'realityLogs');
+    const logsRef = collection(db, 'users', PUBLIC_USER_ID, 'realityLogs');
     const logsQuery = query(logsRef, orderBy('createdAt', 'desc'));
     
     const unsubLogs = onSnapshot(logsQuery, 
@@ -74,7 +70,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       unsubIntentions();
       unsubLogs();
     };
-  }, [db, user]);
+  }, [db]);
 
   return (
     <DataContext.Provider value={{ intentions, logs, loading }}>

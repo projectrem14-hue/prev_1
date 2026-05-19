@@ -1,18 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   PlusSquare, 
   Timer, 
-  BarChart3, 
-  LogOut
+  BarChart3
 } from 'lucide-react';
-import { useAuth as useFirebaseStudioAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -23,16 +19,6 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const router = useRouter();
-  const auth = useFirebaseStudioAuth();
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    toast({ title: "Logged Out", description: "Session ended." });
-    router.push('/login');
-  };
 
   return (
     <>
@@ -65,14 +51,6 @@ export function Navigation() {
             );
           })}
         </div>
-
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors mt-auto"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
       </nav>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-50 flex items-center justify-around px-2">
