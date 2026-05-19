@@ -21,7 +21,7 @@ import {
   ArrowRightCircle
 } from 'lucide-react';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
-import Link from 'link';
+import Link from 'next/link';
 
 export default function Analysis() {
   const { intentions, logs, loading } = useData();
