@@ -1,13 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Intention, RealityLog } from './schema';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export const PUBLIC_USER_ID = 'default-user';
+const INTENTIONS_KEY = 'gaplogic_intentions';
+const LOGS_KEY = 'gaplogic_logs';
 
 interface DataContextType {
   intentions: Intention[];
@@ -22,55 +20,29 @@ const DataContext = createContext<DataContextType>({
 });
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const db = useFirestore();
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadData = () => {
+    const localIntentions = localStorage.getItem(INTENTIONS_KEY);
+    const localLogs = localStorage.getItem(LOGS_KEY);
+    
+    setIntentions(localIntentions ? JSON.parse(localIntentions) : []);
+    setLogs(localLogs ? JSON.parse(localLogs) : []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    if (!db) return;
+    // Initial load
+    loadData();
 
-    setLoading(true);
-
-    const intentionsRef = collection(db, 'users', PUBLIC_USER_ID, 'intentions');
-    const intentionsQuery = query(intentionsRef, orderBy('createdAt', 'desc'));
+    // Sync across tabs/windows
+    const handleStorageChange = () => loadData();
+    window.addEventListener('storage', handleStorageChange);
     
-    const unsubIntentions = onSnapshot(intentionsQuery, 
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Intention));
-        setIntentions(data);
-        setLoading(false);
-      },
-      (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: intentionsRef.path,
-          operation: 'list',
-        }));
-        setLoading(false);
-      }
-    );
-
-    const logsRef = collection(db, 'users', PUBLIC_USER_ID, 'realityLogs');
-    const logsQuery = query(logsRef, orderBy('createdAt', 'desc'));
-    
-    const unsubLogs = onSnapshot(logsQuery, 
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RealityLog));
-        setLogs(data);
-      },
-      (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: logsRef.path,
-          operation: 'list',
-        }));
-      }
-    );
-
-    return () => {
-      unsubIntentions();
-      unsubLogs();
-    };
-  }, [db]);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   return (
     <DataContext.Provider value={{ intentions, logs, loading }}>

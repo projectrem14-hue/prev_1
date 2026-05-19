@@ -7,21 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useData, PUBLIC_USER_ID } from '@/lib/DataContext';
-import { useFirestore } from '@/firebase';
-import { addIntention } from '@/lib/firestore';
-import { useToast } from '@/hooks/use-toast';
+import { useData } from '@/lib/DataContext';
 import { 
   Target, 
   AlertCircle, 
   Calendar,
   Activity,
   Flame,
-  Database,
-  Send,
-  Loader2,
-  RefreshCw,
-  ExternalLink
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -29,48 +22,12 @@ import { format } from 'date-fns';
 
 export default function Dashboard() {
   const { intentions, logs, loading } = useData();
-  const db = useFirestore();
-  const { toast } = useToast();
-  const [seeding, setSeeding] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     document.title = "GapLogic | Dashboard";
   }, []);
-
-  const handleSeedData = async () => {
-    if (!db) {
-      toast({ 
-        variant: "destructive", 
-        title: "Connection Error", 
-        description: "Firebase is not initialized." 
-      });
-      return;
-    }
-    
-    setSeeding(true);
-    try {
-      const sampleTitle = `Sample Audit - ${format(new Date(), 'HH:mm:ss')}`;
-      await addIntention(db, PUBLIC_USER_ID, {
-        title: sampleTitle,
-        category: "work",
-        effortEstimate: 4,
-        estimatedDuration: 45,
-        scheduledTime: format(new Date(), 'HH:mm'),
-        date: format(new Date(), 'yyyy-MM-dd'),
-      });
-      
-      toast({ 
-        title: "Data Pushed to Firebase", 
-        description: "Verify in Firebase Console -> Firestore -> users -> default-user -> intentions." 
-      });
-    } catch (e) {
-      // Handled by global listener
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   const metrics = useMemo(() => {
     if (intentions.length === 0) return null;
@@ -102,8 +59,8 @@ export default function Dashboard() {
 
   const sortedIntentions = useMemo(() => {
     return [...intentions].sort((a, b) => {
-      const aTime = a.createdAt?.toMillis?.() || 0;
-      const bTime = b.createdAt?.toMillis?.() || 0;
+      const aTime = new Date(a.createdAt as any).getTime() || 0;
+      const bTime = new Date(b.createdAt as any).getTime() || 0;
       return bTime - aTime;
     });
   }, [intentions]);
@@ -128,19 +85,16 @@ export default function Dashboard() {
       <Navigation />
       
       <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20 max-w-6xl mx-auto w-full">
-        <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">System Overview</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Firestore Live Sync</span>
-            </div>
+            <p className="text-muted-foreground text-sm mt-1">Local behavioral data audit.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="https://console.firebase.google.com/" target="_blank">
-              <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest gap-2">
-                <ExternalLink className="w-3 h-3" />
-                Firebase Console
+            <Link href="/modeler">
+              <Button variant="outline" className="h-11 px-6 gap-2 rounded-xl font-bold border-primary/20">
+                <Plus className="w-4 h-4" />
+                Add Intention
               </Button>
             </Link>
             <Link href="/sync">
@@ -152,62 +106,21 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Database Storage Verification HUD */}
-        <Card className="mb-8 border-primary/20 bg-primary/5">
-          <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                <Database className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold">Cloud Firestore Data Audit</h4>
-                <p className="text-xs text-muted-foreground">View real-time record counts from your Firebase Project.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-10">
-              <div className="flex gap-10">
-                <div className="text-center">
-                  <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Intentions</p>
-                  <p className="text-2xl font-bold text-primary">{intentions.length}</p>
-                </div>
-                <div className="text-center border-l pl-10">
-                  <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Logs</p>
-                  <p className="text-2xl font-bold text-primary">{logs.length}</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="rounded-xl border-primary/30 font-bold gap-3 hover:bg-primary/5 min-w-[160px]"
-                onClick={handleSeedData}
-                disabled={seeding}
-              >
-                {seeding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                Push Sample
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {intentions.length === 0 && !seeding ? (
-          <div className="py-20 text-center space-y-8 max-w-xl mx-auto border-2 border-dashed rounded-3xl bg-card/50">
+        {intentions.length === 0 ? (
+          <div className="py-24 text-center space-y-8 max-w-xl mx-auto border-2 border-dashed rounded-3xl bg-card/50">
             <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
               <Target className="w-10 h-10 text-primary" />
             </div>
             <div className="space-y-4">
-              <h1 className="text-3xl font-bold tracking-tight">Database Connectivity Confirmed</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Ready for Modeler</h1>
               <p className="text-muted-foreground text-lg leading-relaxed px-6">
-                Your Firestore database is active but empty. Use the <b>Push Sample</b> button above to send your first record to the cloud.
+                Establish your first behavioral intention to begin identifying discrepancies.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center px-10">
-              <Link href="/modeler" className="flex-1">
-                <Button className="h-14 w-full text-lg font-bold rounded-xl shadow-lg shadow-primary/10">Go to Modeler</Button>
+            <div className="flex justify-center">
+              <Link href="/modeler">
+                <Button className="h-14 px-12 text-lg font-bold rounded-xl shadow-lg shadow-primary/10">Go to Modeler</Button>
               </Link>
-              <Button variant="outline" className="h-14 flex-1 text-lg font-bold border-primary/20 rounded-xl" onClick={handleSeedData}>
-                Push Sample
-              </Button>
             </div>
           </div>
         ) : (
@@ -249,16 +162,15 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold flex items-center gap-3">
                   <Activity className="w-6 h-6 text-primary" />
-                  Live Activity Stream
+                  Behavioral Activity
                 </h2>
-                <Badge variant="outline" className="text-[10px] font-bold uppercase border-primary/20 text-primary h-7 px-4">
-                  <RefreshCw className="w-3 h-3 mr-2 animate-spin-slow" />
-                  Real-time
+                <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted text-muted-foreground h-7 px-4">
+                  Local Storage Active
                 </Badge>
               </div>
               
               <div className="grid gap-3">
-                {sortedIntentions.slice(0, 5).map((item) => {
+                {sortedIntentions.slice(0, 10).map((item) => {
                   const log = logs.find(l => l.intentionId === item.id);
                   return (
                     <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-primary/20 transition-all cursor-default">
