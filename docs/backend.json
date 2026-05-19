@@ -23,6 +23,7 @@
         "category": { "type": "string", "enum": ["health", "work", "learning", "personal"] },
         "effortEstimate": { "type": "number", "description": "1-5 intensity scale" },
         "scheduledTime": { "type": "string", "description": "HH:MM format" },
+        "estimatedDuration": { "type": "number", "description": "Duration in minutes" },
         "date": { "type": "string", "description": "YYYY-MM-DD format" },
         "createdAt": { "type": "object", "description": "Firestore server timestamp" }
       },

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -20,10 +21,6 @@ const DataContext = createContext<DataContextType>({
   loading: true,
 });
 
-/**
- * Global provider for application data.
- * Uses real-time listeners for instant synchronization across pages.
- */
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const db = useFirestore();
@@ -32,20 +29,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If the Firestore instance or User is not yet available, we reset state and wait.
-    if (!db || !user || !db.app) {
-      setIntentions([]);
-      setLogs([]);
-      // Only set loading false if user is definitively null (unauthenticated)
+    if (!db || !user) {
       if (user === null) setLoading(false);
       return;
     }
 
     setLoading(true);
 
-    // Real-time listener for Intentions
     const intentionsRef = collection(db, 'users', user.uid, 'intentions');
-    const intentionsQuery = query(intentionsRef, orderBy('date', 'desc'), orderBy('scheduledTime', 'asc'));
+    const intentionsQuery = query(intentionsRef, orderBy('createdAt', 'desc'));
     
     const unsubIntentions = onSnapshot(intentionsQuery, 
       (snapshot) => {
@@ -54,17 +46,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       },
       (error) => {
-        const permissionError = new FirestorePermissionError({
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: intentionsRef.path,
           operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        }));
+        setLoading(false);
       }
     );
 
-    // Real-time listener for Reality Logs
     const logsRef = collection(db, 'users', user.uid, 'realityLogs');
-    const logsQuery = query(logsRef, orderBy('date', 'desc'));
+    const logsQuery = query(logsRef, orderBy('createdAt', 'desc'));
     
     const unsubLogs = onSnapshot(logsQuery, 
       (snapshot) => {
@@ -72,11 +63,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setLogs(data);
       },
       (error) => {
-        const permissionError = new FirestorePermissionError({
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: logsRef.path,
           operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        }));
       }
     );
 
