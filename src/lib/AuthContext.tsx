@@ -1,37 +1,21 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useAuth as useFirebaseAuth } from '@/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import React, { createContext, useContext, ReactNode } from 'react';
 
+// Authentication removed. This context now provides a static "unauthenticated" state for compatibility.
 interface AuthContextType {
-  user: User | null;
+  user: null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
   user: null, 
-  loading: true
+  loading: false
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const auth = useFirebaseAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!auth) return;
-    
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user: null, loading: false }}>
       {children}
     </AuthContext.Provider>
   );

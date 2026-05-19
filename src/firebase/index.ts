@@ -1,24 +1,20 @@
-
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { getAuth, Auth } from 'firebase/auth';
 import { firebaseConfig } from './config';
 
 /**
  * Initializes Firebase services safely.
- * Returns dummy objects if config is missing to prevent crashes during early prototyping.
+ * Authentication has been removed as per user request.
  */
 export function initializeFirebase(): {
   firebaseApp: FirebaseApp;
   firestore: Firestore;
-  auth: Auth;
 } {
   // Prevent server-side initialization
   if (typeof window === 'undefined') {
     return { 
       firebaseApp: {} as FirebaseApp, 
-      firestore: {} as Firestore, 
-      auth: {} as Auth 
+      firestore: {} as Firestore
     };
   }
 
@@ -29,23 +25,20 @@ export function initializeFirebase(): {
     console.warn("Firebase configuration is missing. Link a project in the sidebar to enable database features.");
     return { 
       firebaseApp: {} as FirebaseApp, 
-      firestore: {} as Firestore, 
-      auth: {} as Auth 
+      firestore: {} as Firestore
     };
   }
 
   try {
     const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const firestore = getFirestore(firebaseApp);
-    const auth = getAuth(firebaseApp);
 
-    return { firebaseApp, firestore, auth };
+    return { firebaseApp, firestore };
   } catch (error) {
     console.error("Firebase Initialization Error:", error);
     return { 
       firebaseApp: {} as FirebaseApp, 
-      firestore: {} as Firestore, 
-      auth: {} as Auth 
+      firestore: {} as Firestore
     };
   }
 }
