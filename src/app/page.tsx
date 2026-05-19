@@ -18,7 +18,8 @@ import {
   Download,
   Database,
   Info,
-  ExternalLink
+  ExternalLink,
+  Zip
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -151,18 +152,20 @@ export default function Dashboard() {
           </div>
 
           {/* Project Export Guide Card */}
-          <Card className="clean-card bg-primary/5 border-primary/20">
+          <Card className="clean-card border-primary/40 bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Download className="w-4 h-4 text-primary" />
-                Project Export Guide
+                Download Project (ZIP)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  To download this entire project as a ZIP file, click the **Download icon** in the top navigation bar of your editor.
+              <div className="space-y-3">
+                <p className="text-xs text-foreground font-medium leading-relaxed">
+                  To download this entire project as a ZIP, click the **Download icon** (down arrow) in the **top header of the Firebase Studio editor**.
                 </p>
+                <div className="h-px bg-primary/20 w-full" />
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Local Data Export</p>
                 <Button 
                   onClick={handleExportData}
                   variant="secondary" 
@@ -170,7 +173,7 @@ export default function Dashboard() {
                   className="w-full h-9 rounded-lg font-bold gap-2 text-[10px] uppercase tracking-widest"
                 >
                   <Database className="w-3 h-3" />
-                  Export Local Data (JSON)
+                  Export JSON Data
                 </Button>
               </div>
             </CardContent>
