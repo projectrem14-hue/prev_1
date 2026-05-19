@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import { Navigation } from '@/components/navigation';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,11 @@ import {
   Calendar,
   Activity,
   Flame,
-  Plus
+  Plus,
+  Download,
+  Database,
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -65,6 +69,21 @@ export default function Dashboard() {
     });
   }, [intentions]);
 
+  const handleExportData = () => {
+    const backup = {
+      intentions,
+      logs,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gaplogic-backup-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-background flex">
@@ -88,7 +107,7 @@ export default function Dashboard() {
         <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">System Overview</h1>
-            <p className="text-muted-foreground text-sm mt-1">Local behavioral data audit.</p>
+            <p className="text-muted-foreground text-sm mt-1">Local database audit & management.</p>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/modeler">
@@ -105,6 +124,58 @@ export default function Dashboard() {
             </Link>
           </div>
         </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+          {/* Stats Section */}
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Card className="clean-card">
+              <CardContent className="p-8">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Integrity Rate</p>
+                <div className="flex items-end justify-between mb-4">
+                  <h3 className="text-4xl font-bold">{metrics?.intentionRate || 0}%</h3>
+                  <Target className="w-6 h-6 text-primary opacity-40" />
+                </div>
+                <Progress value={metrics?.intentionRate || 0} className="h-2" />
+              </CardContent>
+            </Card>
+            
+            <Card className="clean-card">
+              <CardContent className="p-8">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Current Streak</p>
+                <div className="flex items-end justify-between">
+                  <h3 className="text-4xl font-bold">{metrics?.streak || 0} Days</h3>
+                  <Flame className="w-6 h-6 text-primary opacity-40" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Project Export Guide Card */}
+          <Card className="clean-card bg-primary/5 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Download className="w-4 h-4 text-primary" />
+                Project Export Guide
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  To download this entire project as a ZIP file, click the **Download icon** in the top navigation bar of your editor.
+                </p>
+                <Button 
+                  onClick={handleExportData}
+                  variant="secondary" 
+                  size="sm" 
+                  className="w-full h-9 rounded-lg font-bold gap-2 text-[10px] uppercase tracking-widest"
+                >
+                  <Database className="w-3 h-3" />
+                  Export Local Data (JSON)
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {intentions.length === 0 ? (
           <div className="py-24 text-center space-y-8 max-w-xl mx-auto border-2 border-dashed rounded-3xl bg-card/50">
@@ -124,82 +195,47 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
-              <Card className="clean-card">
-                <CardContent className="p-8">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Integrity Rate</p>
-                  <div className="flex items-end justify-between mb-4">
-                    <h3 className="text-4xl font-bold">{metrics?.intentionRate || 0}%</h3>
-                    <Target className="w-6 h-6 text-primary opacity-40" />
-                  </div>
-                  <Progress value={metrics?.intentionRate || 0} className="h-2" />
-                </CardContent>
-              </Card>
-              
-              <Card className="clean-card">
-                <CardContent className="p-8">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Current Streak</p>
-                  <div className="flex items-end justify-between">
-                    <h3 className="text-4xl font-bold">{metrics?.streak || 0} Days</h3>
-                    <Flame className="w-6 h-6 text-primary opacity-40" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="clean-card">
-                <CardContent className="p-8">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Pending Audit</p>
-                  <div className="flex items-end justify-between">
-                    <h3 className="text-4xl font-bold">{metrics?.criticalDeviations || 0}</h3>
-                    <AlertCircle className="w-6 h-6 text-muted-foreground opacity-40" />
-                  </div>
-                </CardContent>
-              </Card>
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-3">
+                <Activity className="w-6 h-6 text-primary" />
+                Behavioral Activity
+              </h2>
+              <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted text-muted-foreground h-7 px-4">
+                Local Storage Active
+              </Badge>
             </div>
-
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold flex items-center gap-3">
-                  <Activity className="w-6 h-6 text-primary" />
-                  Behavioral Activity
-                </h2>
-                <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted text-muted-foreground h-7 px-4">
-                  Local Storage Active
-                </Badge>
-              </div>
-              
-              <div className="grid gap-3">
-                {sortedIntentions.slice(0, 10).map((item) => {
-                  const log = logs.find(l => l.intentionId === item.id);
-                  return (
-                    <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-primary/20 transition-all cursor-default">
-                      <div className="flex items-center gap-5">
-                        <div className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
-                          log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary/50 text-muted-foreground"
-                        )}>
-                          <Target className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg">{item.title}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                            {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className={cn(
-                        "text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none",
-                        log ? (log.completed ? "bg-emerald-500/20 text-emerald-500" : "bg-destructive/20 text-destructive") : "bg-muted text-muted-foreground"
+            
+            <div className="grid gap-3">
+              {sortedIntentions.slice(0, 10).map((item) => {
+                const log = logs.find(l => l.intentionId === item.id);
+                return (
+                  <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-primary/20 transition-all cursor-default">
+                    <div className="flex items-center gap-5">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
+                        log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary/50 text-muted-foreground"
                       )}>
-                        {log ? (log.completed ? "Completed" : "Missed") : "Pending Session"}
-                      </Badge>
+                        <Target className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">{item.title}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                          {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          </>
+                    <Badge variant="secondary" className={cn(
+                      "text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none",
+                      log ? (log.completed ? "bg-emerald-500/20 text-emerald-500" : "bg-destructive/20 text-destructive") : "bg-muted text-muted-foreground"
+                    )}>
+                      {log ? (log.completed ? "Completed" : "Missed") : "Pending Session"}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
       </main>
     </div>
