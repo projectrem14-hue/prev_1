@@ -22,7 +22,8 @@ import {
   Database,
   Send,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -42,18 +43,31 @@ export default function Dashboard() {
   }, []);
 
   const handleSeedData = async () => {
-    if (!db || !user) return;
+    if (!db || !user) {
+      toast({ 
+        variant: "destructive", 
+        title: "Connection Error", 
+        description: "Firebase is not initialized. Check your project configuration." 
+      });
+      return;
+    }
+    
     setSeeding(true);
     try {
+      const sampleTitle = `Sample Audit - ${format(new Date(), 'HH:mm:ss')}`;
       await addIntention(db, user.uid, {
-        title: "Sample High-Performance Audit",
+        title: sampleTitle,
         category: "work",
         effortEstimate: 4,
         estimatedDuration: 45,
         scheduledTime: format(new Date(), 'HH:mm'),
         date: format(new Date(), 'yyyy-MM-dd'),
       });
-      toast({ title: "Sample Pushed", description: "Firestore record created successfully." });
+      
+      toast({ 
+        title: "Data Pushed to Firebase", 
+        description: "Verify in Firebase Console -> Firestore -> users -> [ID] -> intentions." 
+      });
     } catch (e) {
       // Handled by global listener
     } finally {
@@ -122,52 +136,60 @@ export default function Dashboard() {
         <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-20 max-w-6xl mx-auto w-full">
           <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+              <h1 className="text-3xl font-bold tracking-tight">System Overview</h1>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cloud Sync: Active</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Firestore Live Sync</span>
               </div>
             </div>
-            <Link href="/sync">
-              <Button variant="outline" className="h-11 px-6 gap-2 border-primary/20 hover:bg-primary/5">
-                <Calendar className="w-4 h-4" />
-                Enter Focus Session
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="https://console.firebase.google.com/" target="_blank">
+                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest gap-2">
+                  <ExternalLink className="w-3 h-3" />
+                  Firebase Console
+                </Button>
+              </Link>
+              <Link href="/sync">
+                <Button className="h-11 px-6 gap-2 rounded-xl font-bold">
+                  <Calendar className="w-4 h-4" />
+                  Focus Session
+                </Button>
+              </Link>
+            </div>
           </header>
 
           {/* Database Storage Verification HUD */}
-          <Card className="mb-8 border-primary/20 bg-primary/5 overflow-hidden">
+          <Card className="mb-8 border-primary/20 bg-primary/5">
             <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <Database className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Database className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold">Cloud Firestore Audit</h4>
-                  <p className="text-xs text-muted-foreground">Verifying live records in your project database.</p>
+                  <h4 className="text-sm font-bold">Cloud Firestore Data Audit</h4>
+                  <p className="text-xs text-muted-foreground">View real-time record counts from your Firebase Project.</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-8">
-                <div className="flex gap-6">
+              <div className="flex items-center gap-10">
+                <div className="flex gap-10">
                   <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Stored Intentions</p>
-                    <p className="text-xl font-bold text-primary">{intentions.length}</p>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Intentions</p>
+                    <p className="text-2xl font-bold text-primary">{intentions.length}</p>
                   </div>
-                  <div className="text-center border-l pl-6">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Reality Logs</p>
-                    <p className="text-xl font-bold text-primary">{logs.length}</p>
+                  <div className="text-center border-l pl-10">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Logs</p>
+                    <p className="text-2xl font-bold text-primary">{logs.length}</p>
                   </div>
                 </div>
                 <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-primary font-bold gap-2 hover:bg-primary/10"
+                  variant="outline" 
+                  size="lg" 
+                  className="rounded-xl border-primary/30 font-bold gap-3 hover:bg-primary/5 min-w-[160px]"
                   onClick={handleSeedData}
                   disabled={seeding}
                 >
-                  {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {seeding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                   Push Sample
                 </Button>
               </div>
@@ -175,31 +197,31 @@ export default function Dashboard() {
           </Card>
 
           {intentions.length === 0 && !seeding ? (
-            <div className="py-20 text-center space-y-8 max-w-xl mx-auto border-2 border-dashed rounded-3xl">
+            <div className="py-20 text-center space-y-8 max-w-xl mx-auto border-2 border-dashed rounded-3xl bg-card/50">
               <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
                 <Target className="w-10 h-10 text-primary" />
               </div>
               <div className="space-y-4">
-                <h1 className="text-3xl font-bold tracking-tight">Database Empty</h1>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  Establish your first set of intentions or use the "Push Sample" button above to verify your Cloud Firestore connection.
+                <h1 className="text-3xl font-bold tracking-tight">Database Connectivity Confirmed</h1>
+                <p className="text-muted-foreground text-lg leading-relaxed px-6">
+                  Your Firestore database is active but empty. Use the <b>Push Sample</b> button above to send your first record to the cloud.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/modeler">
-                  <Button className="h-14 px-10 text-lg font-bold w-full sm:w-auto">Go to Modeler</Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center px-10">
+                <Link href="/modeler" className="flex-1">
+                  <Button className="h-14 w-full text-lg font-bold rounded-xl shadow-lg shadow-primary/10">Go to Modeler</Button>
                 </Link>
-                <Button variant="outline" className="h-14 px-10 text-lg font-bold border-primary/20" onClick={handleSeedData}>
-                  Push Initial Sample
+                <Button variant="outline" className="h-14 flex-1 text-lg font-bold border-primary/20 rounded-xl" onClick={handleSeedData}>
+                  Push Sample
                 </Button>
               </div>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
-                <Card className="clean-card shadow-sm">
+                <Card className="clean-card">
                   <CardContent className="p-8">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Integrity Rate</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Integrity Rate</p>
                     <div className="flex items-end justify-between mb-4">
                       <h3 className="text-4xl font-bold">{metrics?.intentionRate || 0}%</h3>
                       <Target className="w-6 h-6 text-primary opacity-40" />
@@ -208,9 +230,9 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
                 
-                <Card className="clean-card shadow-sm">
+                <Card className="clean-card">
                   <CardContent className="p-8">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Current Streak</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Current Streak</p>
                     <div className="flex items-end justify-between">
                       <h3 className="text-4xl font-bold">{metrics?.streak || 0} Days</h3>
                       <Flame className="w-6 h-6 text-primary opacity-40" />
@@ -218,9 +240,9 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="clean-card shadow-sm">
+                <Card className="clean-card">
                   <CardContent className="p-8">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Pending Sync</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Pending Audit</p>
                     <div className="flex items-end justify-between">
                       <h3 className="text-4xl font-bold">{metrics?.criticalDeviations || 0}</h3>
                       <AlertCircle className="w-6 h-6 text-muted-foreground opacity-40" />
@@ -233,38 +255,38 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold flex items-center gap-3">
                     <Activity className="w-6 h-6 text-primary" />
-                    Behavioral Activity (Real-time)
+                    Live Activity Stream
                   </h2>
-                  <Badge variant="outline" className="text-[10px] font-bold uppercase border-primary/20 text-primary">
+                  <Badge variant="outline" className="text-[10px] font-bold uppercase border-primary/20 text-primary h-7 px-4">
                     <RefreshCw className="w-3 h-3 mr-2 animate-spin-slow" />
-                    Live Database
+                    Real-time
                   </Badge>
                 </div>
                 
-                <div className="space-y-3">
-                  {sortedIntentions.slice(0, 8).map((item) => {
+                <div className="grid gap-3">
+                  {sortedIntentions.slice(0, 5).map((item) => {
                     const log = logs.find(l => l.intentionId === item.id);
                     return (
-                      <div key={item.id} className="clean-card p-5 flex items-center justify-between border-transparent hover:border-primary/10 transition-colors">
+                      <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-primary/20 transition-all cursor-default">
                         <div className="flex items-center gap-5">
                           <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center",
-                            log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary text-muted-foreground"
+                            "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
+                            log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary/50 text-muted-foreground"
                           )}>
                             <Target className="w-6 h-6" />
                           </div>
                           <div>
-                            <p className="font-bold">{item.title}</p>
+                            <p className="font-bold text-lg">{item.title}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                              {item.category} • {item.date} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
+                              {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
                             </p>
                           </div>
                         </div>
-                        <Badge variant="outline" className={cn(
-                          "text-[10px] uppercase font-bold tracking-widest px-4 h-7 border-none",
-                          log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary"
+                        <Badge variant="secondary" className={cn(
+                          "text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none",
+                          log ? (log.completed ? "bg-emerald-500/20 text-emerald-500" : "bg-destructive/20 text-destructive") : "bg-muted text-muted-foreground"
                         )}>
-                          {log ? (log.completed ? "Completed" : "Missed") : "Pending"}
+                          {log ? (log.completed ? "Completed" : "Missed") : "Pending Session"}
                         </Badge>
                       </div>
                     );
