@@ -12,14 +12,12 @@ interface DataContextType {
   intentions: Intention[];
   logs: RealityLog[];
   loading: boolean;
-  refresh: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType>({
   intentions: [],
   logs: [],
   loading: true,
-  refresh: async () => {},
 });
 
 /**
@@ -34,10 +32,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db || !user) {
+    // If the Firestore instance or User is not yet available, we reset state and wait.
+    if (!db || !user || !db.app) {
       setIntentions([]);
       setLogs([]);
-      setLoading(false);
+      // Only set loading false if user is definitively null (unauthenticated)
+      if (user === null) setLoading(false);
       return;
     }
 
@@ -86,13 +86,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [db, user]);
 
-  const refresh = async () => {
-    // With onSnapshot, manual refresh is usually not needed,
-    // but we keep the interface for legacy compatibility.
-  };
-
   return (
-    <DataContext.Provider value={{ intentions, logs, loading, refresh }}>
+    <DataContext.Provider value={{ intentions, logs, loading }}>
       {children}
     </DataContext.Provider>
   );
