@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Navigation } from '@/components/navigation';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,19 +23,23 @@ import {
   Timer,
   Save,
   Loader2,
-  Zap
+  Zap,
+  BrainCircuit,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addRealityLog } from '@/lib/firestore';
 import { Intention } from '@/lib/schema';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { predictBehavioralOutcome, PredictBehavioralOutcomeOutput } from '@/ai/flows/predict-behavioral-outcome';
 
 export default function FocusTimer() {
   const { toast } = useToast();
   const db = useFirestore();
   const { user } = useAuth();
-  const { intentions, logs, loading, refresh } = useData();
+  const { intentions, logs, loading } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [activeIntention, setActiveIntention] = useState<Intention | null>(null);
@@ -43,6 +47,8 @@ export default function FocusTimer() {
   const [isPaused, setIsPaused] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [predicting, setPredicting] = useState(false);
+  const [prediction, setPrediction] = useState<PredictBehavioralOutcomeOutput | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [feedback, setFeedback] = useState({
@@ -52,7 +58,6 @@ export default function FocusTimer() {
     contextNote: '',
   });
 
-  // Use global data instead of local fetching to ensure consistency and speed
   const todayIntentions = useMemo(() => {
     return intentions.filter(i => i.date === today);
   }, [intentions, today]);
@@ -74,12 +79,48 @@ export default function FocusTimer() {
     };
   }, [isPaused, timeLeft, activeIntention]);
 
+  const runPrediction = async (intention: Intention) => {
+    if (predicting) return;
+    setPredicting(true);
+    try {
+      const history = intentions.map(i => {
+        const log = logs.find(l => l.intentionId === i.id);
+        return {
+          title: i.title,
+          category: i.category,
+          effort: i.effortEstimate,
+          completed: !!log?.completed,
+          friction: log?.frictionNote,
+          date: i.date
+        };
+      });
+
+      const res = await predictBehavioralOutcome({
+        history: history.slice(0, 20),
+        currentIntention: {
+          title: intention.title,
+          category: intention.category,
+          effort: intention.effortEstimate,
+          scheduledTime: intention.scheduledTime,
+          date: intention.date
+        }
+      });
+      setPrediction(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPredicting(false);
+    }
+  };
+
   const startSession = (intention: Intention) => {
     setActiveIntention(intention);
     setTimeLeft((intention.estimatedDuration || 25) * 60);
     setIsPaused(false);
     setIsCompleted(false);
+    setPrediction(null);
     setFeedback(prev => ({ ...prev, actualEffort: intention.effortEstimate }));
+    runPrediction(intention);
     toast({ title: "Session Started", description: `Focusing on: ${intention.title}` });
   };
 
@@ -94,7 +135,7 @@ export default function FocusTimer() {
     if (!db || !user || !activeIntention) return;
     setSubmitting(true);
     try {
-      await addRealityLog(db, user.uid, {
+      addRealityLog(db, user.uid, {
         intentionId: activeIntention.id,
         completed: feedback.completed,
         actualEffort: feedback.actualEffort,
@@ -106,7 +147,7 @@ export default function FocusTimer() {
       toast({ title: "Reality Synced", description: "Behavioral data saved." });
       setActiveIntention(null);
       setIsCompleted(false);
-      await refresh();
+      setPrediction(null);
     } catch (error) {
       // Handled centrally
     } finally {
@@ -133,47 +174,84 @@ export default function FocusTimer() {
           </header>
 
           {activeIntention ? (
-            <section className="space-y-8">
-              <Card className="clean-card p-12 text-center space-y-10 border-none shadow-none bg-secondary/30">
-                <div className="space-y-2">
-                  <Badge variant="secondary" className="uppercase tracking-widest text-[10px] font-bold px-4 h-6">
-                    {activeIntention.category}
-                  </Badge>
-                  <h2 className="text-4xl font-bold">{activeIntention.title}</h2>
-                </div>
+            <section className="space-y-6">
+              <Card className="clean-card border-none bg-secondary/20 overflow-hidden">
+                <CardContent className="p-10 text-center space-y-8">
+                  <div className="space-y-2">
+                    <Badge variant="secondary" className="uppercase tracking-widest text-[10px] font-bold px-4 h-6">
+                      {activeIntention.category}
+                    </Badge>
+                    <h2 className="text-4xl font-bold">{activeIntention.title}</h2>
+                  </div>
 
-                <div className="text-[120px] font-bold tracking-tighter tabular-nums leading-none">
-                  {formatTime(timeLeft)}
-                </div>
+                  <div className="text-[120px] font-bold tracking-tighter tabular-nums leading-none">
+                    {formatTime(timeLeft)}
+                  </div>
 
-                <Progress value={progress} className="h-2 bg-background" />
+                  <Progress value={progress} className="h-2 bg-background/50" />
 
-                <div className="flex justify-center gap-6">
-                  <Button 
-                    variant="outline" 
-                    className="h-14 w-14 rounded-full border-none bg-card hover:bg-accent"
-                    onClick={() => setTimeLeft(activeIntention.estimatedDuration * 60)}
-                  >
-                    <RotateCcw className="w-6 h-6" />
-                  </Button>
-                  <Button 
-                    className="h-20 w-20 rounded-full shadow-lg"
-                    onClick={() => setIsPaused(!isPaused)}
-                  >
-                    {isPaused ? <Play className="w-8 h-8 fill-current" /> : <Pause className="w-8 h-8 fill-current" />}
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    className="h-14 w-14 rounded-full border-none shadow-lg"
-                    onClick={() => handleSessionEnd()}
-                  >
-                    <Zap className="w-6 h-6" />
-                  </Button>
-                </div>
+                  <div className="flex justify-center gap-6">
+                    <Button 
+                      variant="outline" 
+                      className="h-14 w-14 rounded-full border-none bg-card hover:bg-accent"
+                      onClick={() => setTimeLeft(activeIntention.estimatedDuration * 60)}
+                    >
+                      <RotateCcw className="w-6 h-6" />
+                    </Button>
+                    <Button 
+                      className="h-20 w-20 rounded-full shadow-lg"
+                      onClick={() => setIsPaused(!isPaused)}
+                    >
+                      {isPaused ? <Play className="w-8 h-8 fill-current" /> : <Pause className="w-8 h-8 fill-current" />}
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      className="h-14 w-14 rounded-full border-none shadow-lg"
+                      onClick={() => handleSessionEnd()}
+                    >
+                      <Zap className="w-6 h-6" />
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
 
+              {/* Predictive Audit HUD */}
+              {predicting || prediction ? (
+                <Card className="clean-card border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
+                      <BrainCircuit className="w-4 h-4" />
+                      Predictive Behavior Audit
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {predicting ? (
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground animate-pulse">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Analyzing behavioral history for leakage...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">Forecasted Outcome</p>
+                          <div className="flex items-center gap-2">
+                            {prediction?.prediction === 'completed' ? <TrendingUp className="text-emerald-500 w-4 h-4" /> : <AlertTriangle className="text-destructive w-4 h-4" />}
+                            <span className="font-bold capitalize">{prediction?.prediction}</span>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2 space-y-1">
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">Diagnostic Insight</p>
+                          <p className="text-sm leading-relaxed">{prediction?.reasoning}</p>
+                          <p className="text-xs font-medium text-primary mt-2">💡 Pivot: {prediction?.suggestedAction}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : null}
+
               {isCompleted && (
-                <Card className="clean-card p-8 space-y-8">
+                <Card className="clean-card p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                   <div className="text-center space-y-2">
                     <h3 className="text-2xl font-bold">Session Outcome</h3>
                     <p className="text-muted-foreground text-sm">Compare plan vs. reality.</p>
@@ -212,7 +290,7 @@ export default function FocusTimer() {
                       <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Notes</Label>
                       <Textarea 
                         placeholder="What resisted your focus?" 
-                        className="min-h-[140px] rounded-xl"
+                        className="min-h-[140px] rounded-xl bg-background"
                         value={feedback.frictionNote}
                         onChange={(e) => setFeedback({...feedback, frictionNote: e.target.value})}
                       />
@@ -253,18 +331,18 @@ export default function FocusTimer() {
                   {todayIntentions.map((item) => {
                     const log = logs.find(l => l.intentionId === item.id);
                     return (
-                      <Card key={item.id} className="clean-card overflow-hidden hover:border-primary/50 transition-colors">
+                      <Card key={item.id} className="clean-card hover:border-primary/50 transition-colors">
                         <div className="p-6 flex items-center justify-between">
                           <div className="flex items-center gap-6">
                             <div className={cn(
-                              "w-12 h-12 rounded-xl flex items-center justify-center",
+                              "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
                               log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-primary/5 text-primary"
                             )}>
                               {log ? (log.completed ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />) : <Play className="w-6 h-6" />}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{item.category}</Badge>
+                                <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4 border-none bg-muted">{item.category}</Badge>
                                 <span className="text-[10px] text-muted-foreground font-bold">{item.estimatedDuration}m</span>
                               </div>
                               <h4 className="font-bold text-lg">{item.title}</h4>

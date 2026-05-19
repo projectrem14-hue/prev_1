@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Intention, RealityLog } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -12,14 +12,20 @@ interface DataContextType {
   intentions: Intention[];
   logs: RealityLog[];
   loading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType>({
   intentions: [],
   logs: [],
   loading: true,
+  refresh: async () => {},
 });
 
+/**
+ * Global provider for application data.
+ * Uses real-time listeners for instant synchronization across pages.
+ */
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const db = useFirestore();
@@ -80,8 +86,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [db, user]);
 
+  const refresh = async () => {
+    // With onSnapshot, manual refresh is usually not needed,
+    // but we keep the interface for legacy compatibility.
+  };
+
   return (
-    <DataContext.Provider value={{ intentions, logs, loading }}>
+    <DataContext.Provider value={{ intentions, logs, loading, refresh }}>
       {children}
     </DataContext.Provider>
   );

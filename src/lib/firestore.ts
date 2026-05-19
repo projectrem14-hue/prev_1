@@ -1,25 +1,20 @@
-
 'use client';
 
 import { 
   collection, 
-  doc, 
-  setDoc, 
   addDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
   serverTimestamp,
-  Firestore,
-  Timestamp
+  Firestore
 } from 'firebase/firestore';
 import { Intention, RealityLog } from './schema';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
+/**
+ * Adds a new intention to the user's stack.
+ * Optimized for performance by not awaiting the write.
+ */
 export function addIntention(db: Firestore, userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
-  if (!db.type) return; // Skip if db is dummy
   const colRef = collection(db, 'users', userId, 'intentions');
   
   const payload = {
@@ -32,13 +27,15 @@ export function addIntention(db: Firestore, userId: string, data: Omit<Intention
       path: colRef.path,
       operation: 'create',
       requestResourceData: payload,
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }
 
+/**
+ * Records the outcome of a focus session.
+ */
 export function addRealityLog(db: Firestore, userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
-  if (!db.type) return;
   const colRef = collection(db, 'users', userId, 'realityLogs');
   
   const payload = {
@@ -51,59 +48,7 @@ export function addRealityLog(db: Firestore, userId: string, data: Omit<RealityL
       path: colRef.path,
       operation: 'create',
       requestResourceData: payload,
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
-}
-
-export async function getIntentionsByDate(db: Firestore, userId: string, date: string): Promise<Intention[]> {
-  if (!db.type) return [];
-  const colRef = collection(db, 'users', userId, 'intentions');
-  const q = query(colRef, where('date', '==', date), orderBy('scheduledTime', 'asc'));
-  
-  try {
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Intention));
-  } catch (error) {
-    return [];
-  }
-}
-
-export async function getRealityLogsByDate(db: Firestore, userId: string, date: string): Promise<RealityLog[]> {
-  if (!db.type) return [];
-  const colRef = collection(db, 'users', userId, 'realityLogs');
-  const q = query(colRef, where('date', '==', date));
-  
-  try {
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RealityLog));
-  } catch (error) {
-    return [];
-  }
-}
-
-export async function getAllIntentions(db: Firestore, userId: string): Promise<Intention[]> {
-  if (!db.type) return [];
-  const colRef = collection(db, 'users', userId, 'intentions');
-  const q = query(colRef, orderBy('date', 'desc'), orderBy('scheduledTime', 'asc'));
-  
-  try {
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Intention));
-  } catch (error) {
-    return [];
-  }
-}
-
-export async function getAllRealityLogs(db: Firestore, userId: string): Promise<RealityLog[]> {
-  if (!db.type) return [];
-  const colRef = collection(db, 'users', userId, 'realityLogs');
-  const q = query(colRef, orderBy('date', 'desc'));
-  
-  try {
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RealityLog));
-  } catch (error) {
-    return [];
-  }
 }
