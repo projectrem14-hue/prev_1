@@ -15,11 +15,11 @@ import {
   Activity,
   Flame,
   Plus,
-  Download,
-  Database,
   Info,
   ExternalLink,
-  Zip
+  Zip,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -69,21 +69,6 @@ export default function Dashboard() {
       return bTime - aTime;
     });
   }, [intentions]);
-
-  const handleExportData = () => {
-    const backup = {
-      intentions,
-      logs,
-      exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `gaplogic-backup-${format(new Date(), 'yyyy-MM-dd')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   if (!mounted || loading) {
     return (
@@ -151,33 +136,6 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Project Export Guide Card */}
-          <Card className="clean-card border-primary/40 bg-primary/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Download className="w-4 h-4 text-primary" />
-                Download Project (ZIP)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <p className="text-xs text-foreground font-medium leading-relaxed">
-                  To download this entire project as a ZIP, click the **Download icon** (down arrow) in the **top header of the Firebase Studio editor**.
-                </p>
-                <div className="h-px bg-primary/20 w-full" />
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Local Data Export</p>
-                <Button 
-                  onClick={handleExportData}
-                  variant="secondary" 
-                  size="sm" 
-                  className="w-full h-9 rounded-lg font-bold gap-2 text-[10px] uppercase tracking-widest"
-                >
-                  <Database className="w-3 h-3" />
-                  Export JSON Data
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {intentions.length === 0 ? (
@@ -198,45 +156,85 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold flex items-center gap-3">
-                <Activity className="w-6 h-6 text-primary" />
-                Behavioral Activity
-              </h2>
-              <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted text-muted-foreground h-7 px-4">
-                Local Storage Active
-              </Badge>
+          <section className="space-y-12">
+            {/* Completed Activities */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-emerald-500" />
+                  Completed Activities
+                </h2>
+                <Badge variant="outline" className="text-[10px] font-bold uppercase border-emerald-500/30 text-emerald-500 h-7 px-4 bg-emerald-500/5">
+                  {logs.filter(l => l.completed).length} Done
+                </Badge>
+              </div>
+              
+              <div className="grid gap-3">
+                {sortedIntentions
+                  .filter(item => logs.some(l => l.intentionId === item.id && l.completed))
+                  .slice(0, 10)
+                  .map((item) => {
+                    const log = logs.find(l => l.intentionId === item.id && l.completed);
+                    return (
+                      <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-emerald-500/20 transition-all cursor-default">
+                        <div className="flex items-center gap-5 flex-1 min-w-0">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500 flex-shrink-0">
+                            <CheckCircle2 className="w-6 h-6" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-lg truncate">{item.title}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                              {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge className="text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none bg-emerald-500/20 text-emerald-500 flex-shrink-0 ml-4">
+                          Completed
+                        </Badge>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
-            
-            <div className="grid gap-3">
-              {sortedIntentions.slice(0, 10).map((item) => {
-                const log = logs.find(l => l.intentionId === item.id);
-                return (
-                  <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-primary/20 transition-all cursor-default">
-                    <div className="flex items-center gap-5">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
-                        log ? (log.completed ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive") : "bg-secondary/50 text-muted-foreground"
-                      )}>
-                        <Target className="w-6 h-6" />
+
+            {/* Missed Activities */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <AlertCircle className="w-6 h-6 text-destructive" />
+                  Missed Activities
+                </h2>
+                <Badge variant="outline" className="text-[10px] font-bold uppercase border-destructive/30 text-destructive h-7 px-4 bg-destructive/5">
+                  {logs.filter(l => !l.completed).length} Missed
+                </Badge>
+              </div>
+              
+              <div className="grid gap-3">
+                {sortedIntentions
+                  .filter(item => logs.some(l => l.intentionId === item.id && !l.completed))
+                  .slice(0, 10)
+                  .map((item) => {
+                    const log = logs.find(l => l.intentionId === item.id && !l.completed);
+                    return (
+                      <div key={item.id} className="clean-card p-5 flex items-center justify-between group hover:border-destructive/20 transition-all cursor-default">
+                        <div className="flex items-center gap-5 flex-1 min-w-0">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-destructive/10 text-destructive flex-shrink-0">
+                            <XCircle className="w-6 h-6" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-lg truncate">{item.title}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                              {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge className="text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none bg-destructive/20 text-destructive flex-shrink-0 ml-4">
+                          Missed
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="font-bold text-lg">{item.title}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                          {item.category} • {format(new Date(item.date), 'MMM dd')} {item.scheduledTime ? `at ${item.scheduledTime}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className={cn(
-                      "text-[10px] uppercase font-bold tracking-widest px-4 h-8 rounded-lg border-none",
-                      log ? (log.completed ? "bg-emerald-500/20 text-emerald-500" : "bg-destructive/20 text-destructive") : "bg-muted text-muted-foreground"
-                    )}>
-                      {log ? (log.completed ? "Completed" : "Missed") : "Pending Session"}
-                    </Badge>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+              </div>
             </div>
           </section>
         )}

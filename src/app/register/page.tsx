@@ -9,20 +9,22 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { LogIn, Loader2 } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const { user, login } = useSession();
+  const { user, register } = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
-    document.title = 'GapLogic | Login';
+    document.title = 'GapLogic | Register';
   }, []);
 
   useEffect(() => {
@@ -33,17 +35,27 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Password Mismatch',
+        description: 'Passwords do not match',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      toast({ title: 'Success', description: 'Logged in successfully!' });
+      await register(formData.email, formData.password, formData.name);
+      toast({ title: 'Success', description: 'Account created successfully!' });
       router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message || 'Invalid credentials',
+        title: 'Registration Failed',
+        description: error.message || 'Something went wrong',
       });
     } finally {
       setLoading(false);
@@ -56,19 +68,34 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <LogIn className="w-8 h-8 text-primary" />
+            <UserPlus className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your GapLogic account</p>
+          <h1 className="text-3xl font-bold tracking-tight">Join GapLogic</h1>
+          <p className="text-muted-foreground">Create your account to start tracking behavioral gaps</p>
         </div>
 
-        {/* Login Form */}
+        {/* Register Form */}
         <Card className="clean-card border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-xl">Login</CardTitle>
+            <CardTitle className="text-xl">Create Account</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Full Name
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="rounded-xl h-12 bg-background"
+                  required
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Email Address
@@ -99,6 +126,21 @@ export default function LoginPage() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="rounded-xl h-12 bg-background"
+                  required
+                />
+              </div>
+
               <Button
                 type="submit"
                 className="w-full h-12 font-bold rounded-xl"
@@ -107,21 +149,21 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Logging in...
+                    Creating account...
                   </>
                 ) : (
-                  'Sign In'
+                  'Create Account'
                 )}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Register Link */}
+        {/* Login Link */}
         <div className="text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-primary hover:underline font-semibold">
-            Create one
+          Already have an account?{' '}
+          <Link href="/login" className="text-primary hover:underline font-semibold">
+            Sign in
           </Link>
         </div>
       </div>

@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { useData, PUBLIC_USER_ID } from '@/lib/DataContext';
+import { useData } from '@/lib/DataContext';
 import { 
   CheckCircle2, 
   XCircle,
@@ -36,7 +35,6 @@ import { predictBehavioralOutcome, PredictBehavioralOutcomeOutput } from '@/ai/f
 
 export default function FocusTimer() {
   const { toast } = useToast();
-  const db = useFirestore();
   const { intentions, logs, loading } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
@@ -130,10 +128,10 @@ export default function FocusTimer() {
   };
 
   const handleSaveReality = async () => {
-    if (!db || !activeIntention) return;
+    if (!activeIntention) return;
     setSubmitting(true);
     try {
-      addRealityLog(db, PUBLIC_USER_ID, {
+      addRealityLog({
         intentionId: activeIntention.id,
         completed: feedback.completed,
         actualEffort: feedback.actualEffort,

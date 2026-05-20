@@ -1,6 +1,4 @@
 
-import { Timestamp } from 'firebase/firestore';
-
 /**
  * Represents basic user information.
  */
@@ -8,7 +6,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
-  createdAt: Timestamp;
+  createdAt: string;
 }
 
 /**
@@ -22,7 +20,7 @@ export interface Intention {
   scheduledTime: string;   // "HH:MM"
   estimatedDuration: number; // in minutes
   date: string;            // "YYYY-MM-DD"
-  createdAt: Timestamp;
+  createdAt: string;
 }
 
 /**
@@ -36,5 +34,5 @@ export interface RealityLog {
   frictionNote: string;    // what went wrong
   contextNote: string;     // mood, energy, situation
   date: string;
-  createdAt: Timestamp;
+  createdAt: string;
 }

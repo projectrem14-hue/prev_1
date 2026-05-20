@@ -9,16 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { addIntention } from '@/lib/firestore';
-import { useData, PUBLIC_USER_ID } from '@/lib/DataContext';
+import { useData } from '@/lib/DataContext';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
 import { format } from 'date-fns';
 import { Plus, Loader2, Layers, Clock, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Modeler() {
   const { toast } = useToast();
-  const db = useFirestore();
   const { intentions, loading } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
@@ -43,7 +41,6 @@ export default function Modeler() {
   }, [intentions, selectedDate]);
 
   const handleAdd = async () => {
-    if (!db) return;
     if (!formData.title) {
       toast({ variant: "destructive", title: "Missing Title", description: "Please name your intention." });
       return;
@@ -51,7 +48,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      addIntention(db, PUBLIC_USER_ID, {
+      addIntention({
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -170,7 +167,7 @@ export default function Modeler() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-3">
                 <Layers className="w-6 h-6 text-primary" />
-                Cognitive Stack
+                Scheduled Intentions
               </h2>
               <Badge variant="secondary" className="px-4 h-7 text-[10px] font-bold uppercase tracking-widest">
                 {filteredIntentions.length} Defined
@@ -201,7 +198,9 @@ export default function Modeler() {
                     <p className="font-bold text-lg leading-tight line-clamp-2">{item.title}</p>
                     <div className="flex items-center gap-2 text-muted-foreground pt-2">
                       <Clock className="w-4 h-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{item.estimatedDuration} Minutes</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {Math.floor(item.estimatedDuration / 60)}m {item.estimatedDuration % 60}s
+                      </span>
                     </div>
                   </Card>
                 ))}

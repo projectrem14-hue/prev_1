@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useData } from '@/lib/DataContext';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -36,12 +36,29 @@ export default function Analysis() {
       const d = format(day, 'yyyy-MM-dd');
       const dayInt = intentions.filter(i => i.date === d);
       const dayDone = logs.filter(l => l.date === d && l.completed);
+      const totalMinutes = logs
+        .filter(l => l.date === d)
+        .reduce((acc, log) => {
+          const intention = intentions.find(i => i.id === log.intentionId);
+          return acc + (intention?.estimatedDuration || 0);
+        }, 0);
       return { 
         name: format(day, 'MMM dd'), 
-        rate: dayInt.length > 0 ? Math.round((dayDone.length / dayInt.length) * 100) : 0 
+        rate: dayInt.length > 0 ? Math.round((dayDone.length / dayInt.length) * 100) : 0,
+        time: totalMinutes 
       };
     });
   }, [intentions, logs]);
+
+  // Completion Status Data for Pie Chart
+  const completionData = useMemo(() => {
+    const completed = logs.filter(l => l.completed).length;
+    const missed = logs.filter(l => !l.completed).length;
+    return [
+      { name: 'Completed', value: completed, fill: '#10b981' },
+      { name: 'Missed', value: missed, fill: '#ef4444' }
+    ];
+  }, [logs]);
 
   // Diagnostic Pattern Logic
   const diagnostics = useMemo(() => {
@@ -147,6 +164,59 @@ export default function Analysis() {
                       <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
                       <Area type="monotone" dataKey="rate" stroke="hsl(var(--primary))" fill="url(#colorRate)" strokeWidth={2} />
                     </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="clean-card">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-primary" /> 
+                    Completion Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={completionData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {completionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Time and Consistency Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+              <Card className="clean-card">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-primary" /> 
+                    Time Invested
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis dataKey="name" stroke="#666" fontSize={10} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#666" fontSize={10} axisLine={false} tickLine={false} label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                      <Line type="monotone" dataKey="time" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: 'hsl(var(--primary))', r: 4 }} />
+                    </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>

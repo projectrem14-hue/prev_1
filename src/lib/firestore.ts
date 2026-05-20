@@ -18,18 +18,18 @@ function setLocalData<T>(key: string, data: T[]) {
   window.dispatchEvent(new Event('storage'));
 }
 
-export function addIntention(_db: any, _userId: string, data: Omit<Intention, 'id' | 'createdAt'>) {
+export function addIntention(data: Omit<Intention, 'id' | 'createdAt'>) {
   const intentions = getLocalData<Intention>(INTENTIONS_KEY);
   const newIntention: Intention = {
     ...data,
     id: Math.random().toString(36).substring(2, 15),
-    createdAt: new Date().toISOString() as any, // Mocking Timestamp as ISO string for local storage
+    createdAt: new Date().toISOString(),
   };
   
   setLocalData(INTENTIONS_KEY, [newIntention, ...intentions]);
 }
 
-export function addRealityLog(_db: any, _userId: string, data: Omit<RealityLog, 'id' | 'createdAt'>) {
+export function addRealityLog(data: Omit<RealityLog, 'id' | 'createdAt'>) {
   const logs = getLocalData<RealityLog>(LOGS_KEY);
   const newLog: RealityLog = {
     ...data,
