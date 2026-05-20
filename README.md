@@ -1,28 +1,62 @@
 # GapLogic
 
-GapLogic is a high-performance behavioral audit tool designed to identify and eliminate the gap between your intentions and your actual actions.
+GapLogic is a behavioral audit tool that tracks the gap between your intentions and what you actually did.
 
-## 🚀 Getting Started
+## Stack
 
-1.  **Modeler**: Define your intentions, effort estimates, and categories.
-2.  **Focus**: Run high-intensity sessions with real-time timers and predictive behavioral audits.
-3.  **Analysis**: Review your integrity rate, identify leaks, and execute strategic pivots.
+- **Next.js 15** — web app + API
+- **PostgreSQL on Railway** — persistent storage
+- **Expo (React Native)** — mobile app (Expo Go)
 
-## 💾 Data Policy
+## Setup (Web)
 
-GapLogic uses a **pure local database** (`localStorage`). Your data never leaves your machine unless you choose to export it.
+1. Copy environment variables:
 
-## 📦 How to Download the Project (ZIP)
+```bash
+cp .env.example .env.local
+```
 
-To export this entire codebase as a ZIP file:
-1.  Look at the **top navigation bar** of the Firebase Studio editor.
-2.  Click the **Download icon** (the downward-pointing arrow icon).
-3.  The project will be bundled and downloaded to your computer automatically.
+2. Set `DATABASE_URL` to your Railway **public TCP** URL and a strong `SESSION_SECRET`.
 
-## 🛠 Tech Stack
+3. Install and migrate:
 
-- **Next.js 15 (App Router)**
-- **Tailwind CSS & ShadCN UI**
-- **Lucide Icons**
-- **Genkit (AI Analytics)**
-- **Recharts (Data Visualization)**
+```bash
+npm install
+npm run db:migrate
+npm run dev
+```
+
+4. Open [http://localhost:9002](http://localhost:9002), register, then use Modeler → Focus → Analysis.
+
+## Setup (Mobile / Expo Go)
+
+1. Start the web API first (`npm run dev` on port **9002**).
+
+2. In `mobile/.env`, set your PC's LAN IP (required on a physical phone):
+
+```
+EXPO_PUBLIC_API_URL=http://192.168.1.XXX:9002
+```
+
+3. Install and start Expo:
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+4. Scan the QR code with **Expo Go**. Register/login uses the same Railway database as the web app.
+
+## Data
+
+All user accounts, intentions, and reality logs are stored in PostgreSQL. Sessions use signed JWT tokens (httpOnly cookie on web, AsyncStorage on mobile).
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Next.js on port 9002 |
+| `npm run db:migrate` | Create database tables |
+| `npm run typecheck` | TypeScript check (web only) |
+# prev_1
