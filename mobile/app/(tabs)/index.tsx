@@ -1,227 +1,95 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSession } from '../src/lib/SessionContext';
-import { useData } from '../src/lib/DataContext';
-import { useEffect } from 'react';
-
-const { width } = Dimensions.get('window');
-const isSmallScreen = width < 600;
+import { useSession } from '../../src/lib/SessionContext';
+import { useData } from '../../src/lib/DataContext';
+import { useState } from 'react';
 
 export default function DashboardScreen() {
-  const { user } = useSession();
-  const { intentions, logs, loading } = useData();
+  const { user, logout } = useSession();
+  const { intentions, logs, loading, refresh } = useData();
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      router.replace('/(auth)/login');
-    }
-  }, [user]);
+  const completedCount = logs.filter((l) => l.completed).length;
+  const missedCount = logs.filter((l) => !l.completed).length;
+  const completionRate =
+    intentions.length > 0 ? Math.round((completedCount / intentions.length) * 100) : 0;
 
-  const completedCount = logs.filter(l => l.completed).length;
-  const missedCount = logs.filter(l => !l.completed).length;
-  const completionRate = intentions.length > 0 
-    ? Math.round((completedCount / intentions.length) * 100)
-    : 0;
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>GapLogic</Text>
-        <Text style={styles.subtitle}>Behavioral Dashboard</Text>
+        <Text style={styles.subtitle}>Hi, {user?.name}</Text>
+        <TouchableOpacity onPress={logout}>
+          <Text style={styles.logout}>Sign out</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        <View style={[styles.statCard, isSmallScreen && styles.statCardSmall]}>
-          <Text style={styles.statValue}>{completionRate}%</Text>
-          <Text style={styles.statLabel}>Completion Rate</Text>
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{loading ? '—' : `${completionRate}%`}</Text>
+          <Text style={styles.statLabel}>Completion</Text>
         </View>
-        <View style={[styles.statCard, isSmallScreen && styles.statCardSmall]}>
+        <View style={styles.statCard}>
           <Text style={styles.statValue}>{completedCount}</Text>
-          <Text style={styles.statLabel}>Completed</Text>
+          <Text style={styles.statLabel}>Done</Text>
         </View>
-        <View style={[styles.statCard, isSmallScreen && styles.statCardSmall]}>
+        <View style={styles.statCard}>
           <Text style={styles.statValue}>{missedCount}</Text>
           <Text style={styles.statLabel}>Missed</Text>
         </View>
       </View>
 
-      {/* Quick Actions */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => router.push('/modeler')}
-        >
-          <Text style={styles.actionButtonText}>+ Add Intention</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.secondaryButton]}
-          onPress={() => router.push('/focus')}
-        >
-          <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Start Focus</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/modeler')}>
+        <Text style={styles.buttonText}>+ Add Intention</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => router.push('/(tabs)/focus')}>
+        <Text style={[styles.buttonText, styles.buttonTextSecondary]}>Start Focus</Text>
+      </TouchableOpacity>
 
-      {/* Recent Activities */}
-      <View style={styles.activitiesSection}>
-        <Text style={styles.sectionTitle}>Recent Activities</Text>
-        {intentions.slice(0, 5).map((intention) => {
-          const log = logs.find(l => l.intentionId === intention.id);
-          return (
-            <View key={intention.id} style={styles.activityCard}>
-              <View style={styles.activityLeft}>
-                <View style={[
-                  styles.activityIcon,
-                  { backgroundColor: log?.completed ? '#10b98120' : '#ef444420' }
-                ]}>
-                  <Text style={[
-                    styles.activityIconText,
-                    { color: log?.completed ? '#10b981' : '#ef4444' }
-                  ]}>
-                    {log?.completed ? '✓' : '✕'}
-                  </Text>
-                </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityTitle}>{intention.title}</Text>
-                  <Text style={styles.activityMeta}>{intention.category}</Text>
-                </View>
-              </View>
-              <Text style={[
-                styles.activityStatus,
-                { color: log?.completed ? '#10b981' : '#ef4444' }
-              ]}>
-                {log?.completed ? 'Done' : 'Missed'}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+      <Text style={styles.sectionTitle}>Recent</Text>
+      {intentions.slice(0, 8).map((intention) => {
+        const log = logs.find((l) => l.intentionId === intention.id);
+        return (
+          <View key={intention.id} style={styles.card}>
+            <Text style={styles.cardTitle}>{intention.title}</Text>
+            <Text style={styles.cardMeta}>
+              {intention.category} • {log?.completed ? 'Done' : log ? 'Missed' : 'Pending'}
+            </Text>
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0a0a0a',
-  },
-  content: {
-    padding: isSmallScreen ? 12 : 16,
-  },
-  header: {
-    marginBottom: 24,
-    marginTop: 12,
-  },
-  title: {
-    fontSize: isSmallScreen ? 28 : 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: isSmallScreen ? 14 : 16,
-    color: '#888888',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: isSmallScreen ? 'space-between' : 'space-around',
-    marginBottom: 24,
-    gap: isSmallScreen ? 8 : 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: isSmallScreen ? 12 : 16,
-    alignItems: 'center',
-  },
-  statCardSmall: {
-    paddingVertical: 12,
-  },
-  statValue: {
-    fontSize: isSmallScreen ? 20 : 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  statLabel: {
-    fontSize: isSmallScreen ? 11 : 12,
-    color: '#888888',
-    marginTop: 4,
-  },
-  actionsContainer: {
-    flexDirection: isSmallScreen ? 'column' : 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
-    paddingVertical: isSmallScreen ? 12 : 14,
-    alignItems: 'center',
-  },
-  secondaryButton: {
-    backgroundColor: '#1a1a1a',
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: isSmallScreen ? 14 : 16,
-  },
-  secondaryButtonText: {
-    color: '#3b82f6',
-  },
-  activitiesSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 12,
-  },
-  activityCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  activityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  activityIconText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityTitle: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  activityMeta: {
-    color: '#888888',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  activityStatus: {
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  content: { padding: 16, paddingBottom: 32 },
+  header: { marginBottom: 20, marginTop: 8 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
+  subtitle: { color: '#888', marginTop: 4 },
+  logout: { color: '#ef4444', marginTop: 8, fontSize: 13 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  statCard: { flex: 1, backgroundColor: '#1a1a1a', borderRadius: 12, padding: 14, alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  statLabel: { fontSize: 11, color: '#888', marginTop: 4 },
+  button: { backgroundColor: '#3b82f6', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 10 },
+  buttonSecondary: { backgroundColor: '#1a1a1a' },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
+  buttonTextSecondary: { color: '#3b82f6' },
+  sectionTitle: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginTop: 16, marginBottom: 10 },
+  card: { backgroundColor: '#1a1a1a', borderRadius: 10, padding: 12, marginBottom: 8 },
+  cardTitle: { color: '#fff', fontWeight: '600' },
+  cardMeta: { color: '#888', fontSize: 12, marginTop: 4 },
 });

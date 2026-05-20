@@ -35,7 +35,7 @@ import { predictBehavioralOutcome, PredictBehavioralOutcomeOutput } from '@/ai/f
 
 export default function FocusTimer() {
   const { toast } = useToast();
-  const { intentions, logs, loading } = useData();
+  const { intentions, logs, loading, refresh } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [activeIntention, setActiveIntention] = useState<Intention | null>(null);
@@ -131,7 +131,7 @@ export default function FocusTimer() {
     if (!activeIntention) return;
     setSubmitting(true);
     try {
-      addRealityLog({
+      await addRealityLog({
         intentionId: activeIntention.id,
         completed: feedback.completed,
         actualEffort: feedback.actualEffort,
@@ -139,6 +139,7 @@ export default function FocusTimer() {
         contextNote: feedback.contextNote,
         date: today,
       });
+      await refresh();
 
       toast({ title: "Reality Synced", description: "Outcome recorded in behavioral history." });
       setActiveIntention(null);

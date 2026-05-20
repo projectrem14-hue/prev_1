@@ -1,5 +1,3 @@
-'use client';
-
 import React, {
   createContext,
   useContext,
@@ -8,6 +6,7 @@ import React, {
   ReactNode,
   useCallback,
 } from 'react';
+import { apiFetch } from './api';
 import { Intention, RealityLog } from './schema';
 import { useSession } from './SessionContext';
 
@@ -25,7 +24,7 @@ const DataContext = createContext<DataContextType>({
   refresh: async () => {},
 });
 
-export const DataProvider = ({ children }: { children: ReactNode }) => {
+export function DataProvider({ children }: { children: ReactNode }) {
   const { user, loading: sessionLoading } = useSession();
   const [intentions, setIntentions] = useState<Intention[]>([]);
   const [logs, setLogs] = useState<RealityLog[]>([]);
@@ -41,22 +40,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      const [intentionsRes, logsRes] = await Promise.all([
-        fetch('/api/intentions', { credentials: 'include' }),
-        fetch('/api/logs', { credentials: 'include' }),
+      const [intentionsData, logsData] = await Promise.all([
+        apiFetch<{ intentions: Intention[] }>('/api/intentions'),
+        apiFetch<{ logs: RealityLog[] }>('/api/logs'),
       ]);
-
-      if (intentionsRes.ok) {
-        const data = await intentionsRes.json();
-        setIntentions(data.intentions ?? []);
-      }
-
-      if (logsRes.ok) {
-        const data = await logsRes.json();
-        setLogs(data.logs ?? []);
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
+      setIntentions(intentionsData.intentions ?? []);
+      setLogs(logsData.logs ?? []);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -72,6 +63,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </DataContext.Provider>
   );
-};
+}
 
-export const useData = () => useContext(DataContext);
+export function useData() {
+  return useContext(DataContext);
+}

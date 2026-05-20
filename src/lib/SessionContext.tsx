@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 export interface User {
   id: string;
@@ -14,70 +14,71 @@ interface SessionContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-const USERS_KEY = 'gaplogic_users';
-const SESSION_KEY = 'gaplogic_session';
+async function parseJsonResponse(res: Response) {
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Request failed');
+  }
+  return data;
+}
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load session on mount
-  useEffect(() => {
-    const sessionData = localStorage.getItem(SESSION_KEY);
-    if (sessionData) {
-      try {
-        setUser(JSON.parse(sessionData));
-      } catch (e) {
-        console.error('Failed to restore session:', e);
+  const loadSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user ?? null);
+      } else {
+        setUser(null);
       }
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
+
   const login = async (email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]') as Array<User & { password: string }>;
-    const foundUser = users.find(u => u.email === email);
-
-    if (!foundUser || foundUser.password !== password) {
-      throw new Error('Invalid email or password');
-    }
-
-    const { password: _, ...userWithoutPassword } = foundUser;
-    setUser(userWithoutPassword as User);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userWithoutPassword));
+    const data = await parseJsonResponse(
+      await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      })
+    );
+    setUser(data.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]') as Array<User & { password: string }>;
-    
-    if (users.some(u => u.email === email)) {
-      throw new Error('Email already registered');
-    }
-
-    const newUser: User & { password: string } = {
-      id: Math.random().toString(36).substring(2, 15),
-      email,
-      name,
-      password,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword as User);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userWithoutPassword));
+    const data = await parseJsonResponse(
+      await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, name }),
+      })
+    );
+    setUser(data.user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
-    localStorage.removeItem(SESSION_KEY);
+    window.location.href = '/login';
   };
 
   return (

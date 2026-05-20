@@ -15,9 +15,6 @@ import {
   Activity,
   Flame,
   Plus,
-  Info,
-  ExternalLink,
-  Zip,
   CheckCircle2,
   XCircle
 } from 'lucide-react';

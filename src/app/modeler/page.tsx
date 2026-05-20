@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function Modeler() {
   const { toast } = useToast();
-  const { intentions, loading } = useData();
+  const { intentions, loading, refresh } = useData();
   const today = format(new Date(), 'yyyy-MM-dd');
   
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +48,7 @@ export default function Modeler() {
 
     setSubmitting(true);
     try {
-      addIntention({
+      await addIntention({
         title: formData.title,
         category: formData.category,
         effortEstimate: formData.effortEstimate,
@@ -56,6 +56,7 @@ export default function Modeler() {
         scheduledTime: formData.scheduledTime,
         date: formData.date,
       });
+      await refresh();
 
       toast({ title: "Intention Locked", description: "Added to your behavioral stack." });
       setFormData(prev => ({ ...prev, title: '', effortEstimate: 3, estimatedDuration: 25 }));

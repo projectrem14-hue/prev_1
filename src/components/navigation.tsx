@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useSession } from '@/lib/SessionContext';
 import { 
   LayoutDashboard, 
   PlusSquare, 
   Timer, 
-  BarChart3
+  BarChart3,
+  LogOut
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -19,6 +22,7 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const { user, logout } = useSession();
 
   return (
     <>
@@ -31,6 +35,11 @@ export function Navigation() {
         </div>
 
         <div className="flex-1 space-y-1">
+          {user && (
+            <p className="px-3 mb-4 text-xs text-muted-foreground truncate">
+              {user.name}
+            </p>
+          )}
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -51,6 +60,17 @@ export function Navigation() {
             );
           })}
         </div>
+
+        {user && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-muted-foreground"
+            onClick={() => logout()}
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </Button>
+        )}
       </nav>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-50 flex items-center justify-around px-2">
