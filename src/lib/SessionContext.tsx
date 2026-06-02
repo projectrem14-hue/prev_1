@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { apiFetch, saveAuthToken, clearAuthToken, getAuthToken } from './api-config';
+import { useRouter } from 'next/navigation';
 
 export interface User {
   id: string;
@@ -30,22 +32,39 @@ async function parseJsonResponse(res: Response) {
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const loadSession = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      // If there's a stored token, verify it's still valid via /api/auth/me
+      // apiFetch will automatically attach the Bearer header
+      if (!getAuthToken()) {
+        setUser(null);
+        setLoading(false);
+        // Redirect to login client-side (localStorage not accessible server-side/middleware)
+        const isPublic = ['/login', '/register'].includes(window.location.pathname);
+        if (!isPublic) router.push('/login');
+        return;
+      }
+      const res = await apiFetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
         setUser(data.user ?? null);
+        if (!data.user) {
+          clearAuthToken();
+          router.push('/login');
+        }
       } else {
         setUser(null);
+        clearAuthToken();
+        router.push('/login');
       }
     } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     loadSession();
@@ -53,32 +72,33 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const data = await parseJsonResponse(
-      await fetch('/api/auth/login', {
+      await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       })
     );
+    if (data.token) saveAuthToken(data.token);
     setUser(data.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
     const data = await parseJsonResponse(
-      await fetch('/api/auth/register', {
+      await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password, name }),
       })
     );
+    if (data.token) saveAuthToken(data.token);
     setUser(data.user);
   };
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+    clearAuthToken();
     setUser(null);
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   return (

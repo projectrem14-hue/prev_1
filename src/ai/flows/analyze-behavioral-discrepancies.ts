@@ -1,11 +1,11 @@
 'use server';
 /**
- * @fileOverview This file implements a Genkit flow for the Discrepancy Auditor feature.
- * It analyzes a user's planned intentions against their actual behaviors to identify deviations.
+ * @fileOverview This file implements a query for the Discrepancy Auditor feature.
+ * It analyzes a user's planned intentions against their actual behaviors using local Ollama.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
+import { queryOllama, cleanAndParseJson, sanitizeNulls } from '@/ai/ollama';
 
 const PlannedIntentionSchema = z.object({
   id: z.string(),
@@ -33,9 +33,9 @@ export type AnalyzeBehavioralDiscrepanciesInput = z.infer<typeof AnalyzeBehavior
 const DiscrepancyDetailSchema = z.object({
   plannedItem: PlannedIntentionSchema.pick({id: true, description: true}),
   actualOutcome: ActualBehaviorSchema.partial().pick({id: true, description: true, completionStatus: true}).optional(),
-  deviationExplanation: z.string(),
-  inconsistencyReason: z.string(),
-  suggestedInsight: z.string(),
+  deviationExplanation: z.string().default(''),
+  inconsistencyReason: z.string().default(''),
+  suggestedInsight: z.string().default(''),
 });
 
 const AnalyzeBehavioralDiscrepanciesOutputSchema = z.object({
@@ -43,42 +43,104 @@ const AnalyzeBehavioralDiscrepanciesOutputSchema = z.object({
 });
 export type AnalyzeBehavioralDiscrepanciesOutput = z.infer<typeof AnalyzeBehavioralDiscrepanciesOutputSchema>;
 
-export async function analyzeBehavioralDiscrepancies(input: AnalyzeBehavioralDiscrepanciesInput): Promise<AnalyzeBehavioralDiscrepanciesOutput> {
-  return analyzeBehavioralDiscrepanciesFlow(input);
-}
+function formatAnalyzePrompt(input: AnalyzeBehavioralDiscrepanciesInput): string {
+  const plannedText = input.plannedIntentions.map(i => 
+    `- ${i.description} (Effort: ${i.expectedEffort || 'N/A'})`
+  ).join('\n');
 
-const analyzeBehavioralDiscrepanciesPrompt = ai.definePrompt({
-  name: 'analyzeBehavioralDiscrepanciesPrompt',
-  input: { schema: AnalyzeBehavioralDiscrepanciesInputSchema },
-  output: { schema: AnalyzeBehavioralDiscrepanciesOutputSchema },
-  prompt: `You are a diagnostic AI tool named "Discrepancy Auditor".
+  const actualText = input.actualBehaviors.map(b => 
+    `- ${b.description} (Status: ${b.completionStatus})`
+  ).join('\n');
+
+  return `You are a diagnostic AI tool named "Discrepancy Auditor".
 Compare a user's planned intentions with their actual recorded behaviors.
 Identify deviations and explain *why* they occurred, focusing on root causes and inconsistency patterns.
 
 **Planned Intentions:**
-{{#each plannedIntentions}}
-- {{{description}}} (Effort: {{{expectedEffort}}})
-{{/each}}
+${plannedText}
 
 **Actual Behaviors:**
-{{#each actualBehaviors}}
-- {{{description}}} (Status: {{{completionStatus}}})
-{{/each}}
+${actualText}
 
 **Context:**
-{{{analysisContext}}}
+${input.analysisContext || ''}
 
-Return a JSON analysis focusing on empathy and insight.`,
-});
+Return a JSON analysis focusing on empathy and insight.
 
-const analyzeBehavioralDiscrepanciesFlow = ai.defineFlow(
-  {
-    name: 'analyzeBehavioralDiscrepanciesFlow',
-    inputSchema: AnalyzeBehavioralDiscrepanciesInputSchema,
-    outputSchema: AnalyzeBehavioralDiscrepanciesOutputSchema,
-  },
-  async (input) => {
-    const { output } = await analyzeBehavioralDiscrepanciesPrompt(input);
-    return output!;
+### Output format:
+Return a JSON object with the following fields:
+{
+  "discrepancies": [
+    {
+      "plannedItem": {
+        "id": "<string intention id>",
+        "description": "<string title>"
+      },
+      "actualOutcome": {
+        "id": "<string log id optional>",
+        "description": "<string title optional>",
+        "completionStatus": "completed" | "partially_completed" | "not_started" | "deviated"
+      },
+      "deviationExplanation": "<string explanation of why the action deviated>",
+      "inconsistencyReason": "<string root cause pattern>",
+      "suggestedInsight": "<string tip or recommendation>"
+    }
+  ]
+}
+Do NOT return a JSON Schema wrapper (like "type", "properties", etc.). Just return the flat JSON object itself.`;
+}
+
+export async function analyzeBehavioralDiscrepancies(input: AnalyzeBehavioralDiscrepanciesInput): Promise<AnalyzeBehavioralDiscrepanciesOutput> {
+  const prompt = formatAnalyzePrompt(input);
+  const text = await queryOllama(prompt, 'json');
+  
+  let parsed: any;
+  try {
+    parsed = cleanAndParseJson(text);
+  } catch (e) {
+    console.error("[analyzeBehavioralDiscrepancies] JSON Parsing Failed. Raw text was:", text);
+    throw new Error('Failed to parse Gemma output as JSON: ' + (e as Error).message);
   }
-);
+
+  // Normalize structure and handle schema wrappers or key variants
+  if (parsed && typeof parsed === 'object') {
+    if ('properties' in parsed && typeof parsed.properties === 'object') {
+      const props = parsed.properties;
+      parsed = {
+        discrepancies: props.discrepancies?.default ?? props.discrepancies ?? [],
+      };
+    }
+
+    // Ensure discrepancies is an array
+    if (!Array.isArray(parsed.discrepancies)) {
+      parsed.discrepancies = parsed.discrepancies ? [parsed.discrepancies] : [];
+    }
+
+    // Normalize discrepancy items
+    parsed.discrepancies = parsed.discrepancies.map((item: any) => {
+      if (item && typeof item === 'object') {
+        const plannedItem = item.plannedItem ?? item.planned_item ?? {};
+        const actualOutcome = item.actualOutcome ?? item.actual_outcome ?? {};
+        return {
+          plannedItem: {
+            id: String(plannedItem.id ?? ''),
+            description: String(plannedItem.description ?? ''),
+          },
+          actualOutcome: actualOutcome ? {
+            id: actualOutcome.id ? String(actualOutcome.id) : undefined,
+            description: actualOutcome.description ? String(actualOutcome.description) : undefined,
+            completionStatus: actualOutcome.completionStatus ?? actualOutcome.completion_status ?? undefined,
+          } : undefined,
+          deviationExplanation: String(item.deviationExplanation ?? item.deviation_explanation ?? ''),
+          inconsistencyReason: String(item.inconsistencyReason ?? item.inconsistency_reason ?? ''),
+          suggestedInsight: String(item.suggestedInsight ?? item.suggested_insight ?? ''),
+        };
+      }
+      return item;
+    });
+  }
+
+  parsed = sanitizeNulls(parsed);
+
+  return AnalyzeBehavioralDiscrepanciesOutputSchema.parse(parsed);
+}

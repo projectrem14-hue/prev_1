@@ -1,7 +1,9 @@
 import type {NextConfig} from 'next';
 
+const isMobile = process.env.IS_MOBILE === 'true';
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: isMobile ? 'export' : undefined,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -9,6 +11,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

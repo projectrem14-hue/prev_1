@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import { Intention, RealityLog } from './schema';
 import { useSession } from './SessionContext';
+import { apiFetch } from './api-config';
 
 interface DataContextType {
   intentions: Intention[];
@@ -42,8 +43,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const [intentionsRes, logsRes] = await Promise.all([
-        fetch('/api/intentions', { credentials: 'include' }),
-        fetch('/api/logs', { credentials: 'include' }),
+        apiFetch('/api/intentions'),
+        apiFetch('/api/logs'),
       ]);
 
       if (intentionsRes.ok) {

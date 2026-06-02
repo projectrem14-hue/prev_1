@@ -1,6 +1,7 @@
 'use client';
 
 import { Intention, RealityLog } from './schema';
+import { apiFetch } from './api-config';
 
 async function parseJsonResponse(res: Response) {
   const data = await res.json();
@@ -14,10 +15,9 @@ export async function addIntention(
   data: Omit<Intention, 'id' | 'createdAt'>
 ): Promise<Intention> {
   const result = await parseJsonResponse(
-    await fetch('/api/intentions', {
+    await apiFetch('/api/intentions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(data),
     })
   );
@@ -28,10 +28,9 @@ export async function addRealityLog(
   data: Omit<RealityLog, 'id' | 'createdAt'>
 ): Promise<RealityLog> {
   const result = await parseJsonResponse(
-    await fetch('/api/logs', {
+    await apiFetch('/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(data),
     })
   );

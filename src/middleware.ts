@@ -4,8 +4,22 @@ import { isTokenValid, COOKIE_NAME } from '@/lib/auth-jwt';
 
 const PUBLIC_PATHS = ['/login', '/register'];
 
-function withCors(response: NextResponse) {
-  response.headers.set('Access-Control-Allow-Origin', '*');
+function withCors(request: NextRequest, response: NextResponse) {
+  const origin = request.headers.get('origin');
+  const allowedOrigins = [
+    'http://localhost',
+    'capacitor://localhost',
+    'http://localhost:9002',
+    'http://localhost:3000'
+  ];
+
+  if (origin && (allowedOrigins.includes(origin) || origin.startsWith('http://192.168.'))) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+  } else {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+  }
+
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
@@ -14,13 +28,15 @@ function withCors(response: NextResponse) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 1. Handle API routes - allow CORS and bypass middleware auth (API routes handle their own auth)
   if (pathname.startsWith('/api')) {
     if (request.method === 'OPTIONS') {
-      return withCors(new NextResponse(null, { status: 204 }));
+      return withCors(request, new NextResponse(null, { status: 204 }));
     }
-    return withCors(NextResponse.next());
+    return withCors(request, NextResponse.next());
   }
 
+  // 2. Static assets and public pages
   if (
     pathname.startsWith('/_next') ||
     pathname.includes('.') ||
@@ -29,23 +45,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token =
-    request.cookies.get(COOKIE_NAME)?.value ||
-    request.headers.get('authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const valid = await isTokenValid(token);
-  if (!valid) {
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete(COOKIE_NAME);
-    return response;
-  }
-
+  // 3. Protected Page routes — skip server-side auth for Capacitor/localStorage JWT
+  // The JWT is stored client-side in localStorage and can't be read by middleware.
+  // SessionContext handles client-side redirects to /login when no token is present.
+  // API routes enforce auth independently via Authorization: Bearer header.
   return NextResponse.next();
 }
 
