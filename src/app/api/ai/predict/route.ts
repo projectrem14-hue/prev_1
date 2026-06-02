@@ -61,16 +61,27 @@ export async function POST(req: NextRequest) {
     const modelInfo = classifier.getModelInfo();
 
     // Call the predictBehavioralOutcome flow using the configured gemma2:2b model
-    const predictionOutput = await predictBehavioralOutcome({
-      history,
-      currentIntention: {
-        title,
-        category,
-        effort: Number(effortEstimate) || 3,
-        scheduledTime: scheduledTime || '09:00',
-        date,
-      },
-    });
+    let predictionOutput;
+    try {
+      predictionOutput = await predictBehavioralOutcome({
+        history,
+        currentIntention: {
+          title,
+          category,
+          effort: Number(effortEstimate) || 3,
+          scheduledTime: scheduledTime || '09:00',
+          date,
+        },
+      });
+    } catch (llmError) {
+      console.warn('[predict API Route] Gemma predictBehavioralOutcome failed or timed out. Returning local fallback.', llmError);
+      predictionOutput = {
+        prediction: 'completed' as const,
+        probability: 0.5,
+        reasoning: 'Gemma forecast is currently offline or timed out. Your scheduling parameters are logged and ready.',
+        suggestedAction: 'Break the task down into smaller increments and protect your focus block.',
+      };
+    }
 
     return NextResponse.json({
       ...predictionOutput,

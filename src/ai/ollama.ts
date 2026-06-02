@@ -6,25 +6,43 @@ export async function queryOllama(prompt: string, format?: 'json'): Promise<stri
   const url = process.env.OLLAMA_SERVER_ADDRESS || 'http://127.0.0.1:11434';
   const model = process.env.OLLAMA_MODEL || 'gemma2:2b';
 
-  const res = await fetch(`${url}/api/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      prompt,
-      format,
-      stream: false,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
 
-  if (!res.ok) {
-    throw new Error(`Ollama request failed with status ${res.status}: ${await res.text()}`);
+  try {
+    const res = await fetch(`${url}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        format,
+        stream: false,
+        options: {
+          num_predict: 256,
+          temperature: 0.1,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Ollama request failed with status ${res.status}: ${await res.text()}`);
+    }
+
+    const json = await res.json();
+    return json.response || '';
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Ollama request timed out after 15 seconds.');
+    }
+    throw error;
   }
-
-  const json = await res.json();
-  return json.response || '';
 }
 
 /**

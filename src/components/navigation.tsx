@@ -73,7 +73,7 @@ export function Navigation() {
         )}
       </nav>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-50 flex items-center justify-around px-2">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 h-16 bg-card/85 backdrop-blur-md border border-border/80 rounded-2xl shadow-xl z-50 flex items-center justify-around px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -82,22 +82,22 @@ export function Navigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 duration-150",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-bold uppercase">{item.name}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{item.name}</span>
             </Link>
           );
         })}
         {user && (
           <button
             onClick={() => logout()}
-            className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors text-muted-foreground hover:text-destructive"
+            className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 duration-150 text-muted-foreground hover:text-destructive"
           >
             <LogOut className="w-5 h-5" />
-            <span className="text-[10px] font-bold uppercase">Logout</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Logout</span>
           </button>
         )}
       </nav>

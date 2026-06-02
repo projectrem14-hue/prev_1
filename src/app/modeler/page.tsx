@@ -144,7 +144,7 @@ export default function Modeler() {
   return (
     <div className="min-h-screen bg-background flex">
       <Navigation />
-      <main className="flex-1 md:ml-64 p-6 lg:p-10 max-w-5xl mx-auto w-full space-y-12">
+      <main className="flex-1 md:ml-64 p-6 lg:p-10 pb-24 md:pb-10 max-w-5xl mx-auto w-full space-y-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b pb-8">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2">Intention Modeler</h1>
